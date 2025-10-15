@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movimientos - GMT Inventory</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .movimiento-card { border-left: 4px solid; margin-bottom: 10px; }
+        .entrada { border-left-color: #28a745; background-color: #f8fff9; }
+        .salida { border-left-color: #dc3545; background-color: #fff5f5; }
+        .ajuste { border-left-color: #ffc107; background-color: #fffdf5; }
+        .documento-card { border: 2px solid #007bff; margin-bottom: 20px; }
+        .producto-item { border-bottom: 1px solid #eee; padding: 8px 0; }
+        .producto-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">🏭 GMT Inventory</a>
+        <div class="navbar-nav me-auto">
+            <a class="nav-link" href="/">Dashboard</a>
+            <a class="nav-link" href="/productos">Productos</a>
+            <a class="nav-link" href="/movimientos">Movimientos</a>
+            <a class="nav-link" href="/reportes">Reportes</a>
+        </div>
+        <div class="navbar-nav">
+            <span class="navbar-text me-3">👤 Usuario: <strong>admin</strong></span>
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-outline-light btn-sm">Cerrar Sesión</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Formularios de movimientos manuales -->
+        <div class="col-md-4">
+            <!-- Entrada -->
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h6>📥 Entrada Manual</h6>
+                </div>
+                <div class="card-body">
+                    <form id="formEntrada">
+                        <div class="mb-2">
+                            <label class="form-label">Referencia Producto</label>
+                            <input type="text" class="form-control" id="entradaProductoReferencia" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" class="form-control" id="entradaCantidad" required min="1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Motivo</label>
+                            <input type="text" class="form-control" id="entradaMotivo" required>
+                        </div>
+                        <button type="button" class="btn btn-success w-100" onclick="registrarEntrada()">
+                            Registrar Entrada
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Salida -->
+            <div class="card mb-3">
+                <div class="card-header bg-danger text-white">
+                    <h6>📤 Salida Manual</h6>
+                </div>
+                <div class="card-body">
+                    <form id="formSalida">
+                        <div class="mb-2">
+                            <label class="form-label">Referencia Producto</label>
+                            <input type="text" class="form-control" id="salidaProductoReferencia" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" class="form-control" id="salidaCantidad" required min="1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Motivo</label>
+                            <input type="text" class="form-control" id="salidaMotivo" required>
+                        </div>
+                        <button type="button" class="btn btn-danger w-100" onclick="registrarSalida()">
+                            Registrar Salida
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Ajuste -->
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h6>⚖ Ajuste Manual</h6>
+                </div>
+                <div class="card-body">
+                    <form id="formAjuste">
+                        <div class="mb-2">
+                            <label class="form-label">Referencia Producto</label>
+                            <input type="text" class="form-control" id="ajusteProductoReferencia" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Nuevo Stock</label>
+                            <input type="number" class="form-control" id="ajusteNuevoStock" required min="0">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Motivo</label>
+                            <input type="text" class="form-control" id="ajusteMotivo" required>
+                        </div>
+                        <button type="button" class="btn btn-warning w-100" onclick="registrarAjuste()">
+                            Registrar Ajuste
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historial de movimientos -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📋 Historial de Movimientos</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros -->
+                    <div class="mb-3">
+                        <button class="btn btn-outline-primary btn-sm" onclick="cargarTodosMovimientos()">
+                            Todos los Movimientos
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="cargarMovimientosManuales()">
+                            Solo Manuales
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" onclick="cargarDocumentosCompra()">
+                            Documentos Agrupados
+                        </button>
+                    </div>
+
+                    <div id="movimientosList" class="mb-3">
+                        <!-- Los movimientos se cargarán aquí -->
+                    </div>
+
+                    <button class="btn btn-outline-primary w-100" onclick="cargarTodosMovimientos()">
+                        🔄 Actualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ver detalles del documento -->
+<div class="modal fade" id="documentoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📋 Detalles del Documento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="documentoModalBody">
+                <!-- Contenido del modal se cargará aquí -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Función para registrar entrada
+    async function registrarEntrada() {
+        const data = {
+            productoReferencia: document.getElementById('entradaProductoReferencia').value,
+            cantidad: parseInt(document.getElementById('entradaCantidad').value),
+            motivo: document.getElementById('entradaMotivo').value
+        };
+
+        try {
+            const response = await fetch('/api/movimientos/entrada', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('✅ Entrada registrada correctamente');
+                document.getElementById('formEntrada').reset();
+                cargarTodosMovimientos();
+            } else {
+                const error = await response.text();
+                alert('❌ Error: ' + error);
+            }
+        } catch (error) {
+            alert('❌ Error de conexión: ' + error);
+        }
+    }
+
+    // Función para registrar salida
+    async function registrarSalida() {
+        const data = {
+            productoReferencia: document.getElementById('salidaProductoReferencia').value,
+            cantidad: parseInt(document.getElementById('salidaCantidad').value),
+            motivo: document.getElementById('salidaMotivo').value
+        };
+
+        try {
+            const response = await fetch('/api/movimientos/salida', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('✅ Salida registrada correctamente');
+                document.getElementById('formSalida').reset();
+                cargarTodosMovimientos();
+            } else {
+                const error = await response.text();
+                alert('❌ Error: ' + error);
+            }
+        } catch (error) {
+            alert('❌ Error de conexión: ' + error);
+        }
+    }
+
+    // Función para registrar ajuste
+    async function registrarAjuste() {
+        const data = {
+            productoReferencia: document.getElementById('ajusteProductoReferencia').value,
+            nuevoStock: parseInt(document.getElementById('ajusteNuevoStock').value),
+            motivo: document.getElementById('ajusteMotivo').value
+        };
+
+        try {
+            const response = await fetch('/api/movimientos/ajuste', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('✅ Ajuste registrado correctamente');
+                document.getElementById('formAjuste').reset();
+                cargarTodosMovimientos();
+            } else {
+                const error = await response.text();
+                alert('❌ Error: ' + error);
+            }
+        } catch (error) {
+            alert('❌ Error de conexión: ' + error);
+        }
+    }
+
+    // NUEVAS FUNCIONES PARA AGRUPAR MOVIMIENTOS
+    async function cargarTodosMovimientos() {
+        try {
+            const response = await fetch('/api/movimientos');
+            const movimientos = await response.json();
+            mostrarMovimientosIndividuales(movimientos);
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('movimientosList').innerHTML = '<div class="alert alert-danger">Error cargando movimientos</div>';
+        }
+    }
+
+    async function cargarMovimientosManuales() {
+        try {
+            const response = await fetch('/api/movimientos/manuales');
+            const movimientos = await response.json();
+            mostrarMovimientosIndividuales(movimientos);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    async function cargarDocumentosCompra() {
+        try {
+            const response = await fetch('/api/documentos-compra');
+            const documentos = await response.json();
+            mostrarDocumentosAgrupados(documentos);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function mostrarMovimientosIndividuales(movimientos) {
+        const movimientosList = document.getElementById('movimientosList');
+        movimientosList.innerHTML = '';
+
+        if (movimientos.length === 0) {
+            movimientosList.innerHTML = '<div class="text-center text-muted p-3">No hay movimientos registrados</div>';
+            return;
+        }
+
+        movimientos.forEach(mov => {
+            const tipoClass = mov.tipoMovimiento === 'ENTRADA' ? 'entrada' :
+                            mov.tipoMovimiento === 'SALIDA' ? 'salida' : 'ajuste';
+
+            const tipoIcon = mov.tipoMovimiento === 'ENTRADA' ? '📥' :
+                           mov.tipoMovimiento === 'SALIDA' ? '📤' : '⚖';
+
+            const movimientoHTML = `
+                <div class="card movimiento-card ${tipoClass}">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong>${tipoIcon} ${mov.tipoMovimiento}</strong> -
+                                ${mov.producto.nombre}
+                                <br>
+                                <small class="text-muted">Ref: ${mov.producto.referencia}</small>
+                                <div class="mt-2">
+                                    <span class="badge bg-secondary">Cantidad: ${mov.cantidad}</span>
+                                    <span class="badge bg-info">Stock: ${mov.stockAnterior} → ${mov.stockNuevo}</span>
+                                    <span class="badge bg-dark">${mov.motivo}</span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted">${new Date(mov.fechaMovimiento).toLocaleString()}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            movimientosList.innerHTML += movimientoHTML;
+        });
+    }
+
+    function mostrarDocumentosAgrupados(documentos) {
+        const movimientosList = document.getElementById('movimientosList');
+        movimientosList.innerHTML = '';
+
+        if (documentos.length === 0) {
+            movimientosList.innerHTML = '<div class="text-center text-muted p-3">No hay documentos de compra registrados</div>';
+            return;
+        }
+
+        documentos.forEach(doc => {
+            const documentoHTML = `
+                <div class="card documento-card">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>📋 ${doc.cliente}</strong>
+                                <br>
+                                <small>Factura: ${doc.numeroFactura} | Remisión: ${doc.numeroRemision}</small>
+                            </div>
+                            <button class="btn btn-light btn-sm" onclick="verDetalleDocumento(${doc.id})">
+                                👁️ Ver Detalles
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small><strong>Fecha:</strong> ${new Date(doc.fechaFacturacion).toLocaleDateString()}</small><br>
+                                <small><strong>Peso Total:</strong> ${doc.pesoTotal || 'N/A'} kg</small><br>
+                                <small><strong>Valor Total:</strong> $${doc.valorTotal?.toLocaleString() || 'N/A'}</small>
+                            </div>
+                            <div class="col-md-6">
+                                <small><strong>Transportador:</strong> ${doc.transportador || 'N/A'}</small><br>
+                                <small><strong>Conductor:</strong> ${doc.conductor || 'N/A'}</small><br>
+                                <small><strong>Placa:</strong> ${doc.placaVehiculo || 'N/A'}</small>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge bg-success">${doc.movimientos.length} Productos</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            movimientosList.innerHTML += documentoHTML;
+        });
+    }
+
+    async function verDetalleDocumento(documentoId) {
+        try {
+            const response = await fetch(`/api/documentos-compra/${documentoId}/movimientos`);
+            const movimientos = await response.json();
+
+            let detallesHTML = '<h6>Productos incluidos:</h6>';
+            movimientos.forEach(mov => {
+                detallesHTML += `
+                    <div class="producto-item">
+                        <strong>${mov.producto.nombre}</strong><br>
+                        <small>Ref: ${mov.producto.referencia} | Cantidad: ${mov.cantidad} | Stock: ${mov.stockAnterior} → ${mov.stockNuevo}</small>
+                    </div>
+                `;
+            });
+
+            document.getElementById('documentoModalBody').innerHTML = detallesHTML;
+            new bootstrap.Modal(document.getElementById('documentoModal')).show();
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    // Cargar todos los movimientos al iniciar
+    document.addEventListener('DOMContentLoaded', cargarTodosMovimientos);
+</script>
+</body>
+</html>
