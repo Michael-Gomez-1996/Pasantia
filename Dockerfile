@@ -1,7 +1,6 @@
-# Usar una imagen base de Java más específica
-FROM openjdk:17
+# Usar Eclipse Temurin - la más confiable en Render
+FROM eclipse-temurin:17-jre
 
-# Crear directorio de trabajo
 WORKDIR /app
 
 # Copiar el archivo JAR
