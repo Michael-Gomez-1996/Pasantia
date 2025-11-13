@@ -1,17 +1,14 @@
-# Etapa 1: Construcción del proyecto
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+# Usar una imagen base de Java
+FROM openjdk:17-jdk-slim
+
+# Crear directorio de trabajo
 WORKDIR /app
-COPY pom.xml .
-COPY src ./src
-RUN mvn clean package -DskipTests
 
-# Etapa 2: Imagen final
-FROM eclipse-temurin:17-jdk
-WORKDIR /app
-COPY --from=build /app/target/inventory-system-0.0.1-SNAPSHOT.jar app.jar
+# Copiar el archivo JAR (asegúrate de que tu proyecto esté compilado)
+COPY target/*.jar app.jar
 
-# Expone el puerto de la app
-EXPOSE 8080
+# Exponer el puerto que usa Render
+EXPOSE 10000
 
-# Comando de ejecución
+# Comando para ejecutar la aplicación
 ENTRYPOINT ["java", "-jar", "app.jar"]
