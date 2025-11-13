@@ -1,13 +1,13 @@
-# Usar una imagen base de Java
-FROM openjdk:17-jdk-slim
+# Usar una imagen base de Java más específica
+FROM openjdk:17
 
 # Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar el archivo JAR (asegúrate de que tu proyecto esté compilado)
+# Copiar el archivo JAR
 COPY target/*.jar app.jar
 
-# Exponer el puerto que usa Render
+# Exponer el puerto
 EXPOSE 10000
 
 # Comando para ejecutar la aplicación
