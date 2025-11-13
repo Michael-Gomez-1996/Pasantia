@@ -1,9 +1,15 @@
-# Usar Eclipse Temurin - la más confiable en Render
-FROM eclipse-temurin:17-jre
+# Usar Eclipse Temurin con JDK para poder compilar
+FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
-# Copiar el archivo JAR
+# Copiar el código fuente
+COPY . .
+
+# Compilar el proyecto
+RUN ./mvnw clean package -DskipTests
+
+# Copiar el JAR compilado
 COPY target/*.jar app.jar
 
 # Exponer el puerto
