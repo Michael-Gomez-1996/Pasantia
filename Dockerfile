@@ -1,19 +1,10 @@
-# Usar Eclipse Temurin con JDK para poder compilar
-FROM eclipse-temurin:17-jdk
-
+FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /app
-
-# Copiar el código fuente
 COPY . .
+RUN mvn clean package -DskipTests
 
-# Compilar el proyecto
-RUN ./mvnw clean package -DskipTests
-
-# Copiar el JAR compilado
-COPY target/*.jar app.jar
-
-# Exponer el puerto
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 10000
-
-# Comando para ejecutar la aplicación
 ENTRYPOINT ["java", "-jar", "app.jar"]
