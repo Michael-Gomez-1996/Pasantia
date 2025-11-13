@@ -7,10 +7,14 @@ import java.util.List;
 
 public class RemisionDataDTO {
     private String numeroRemision;
+    private String nombreCliente;
+    private String nitCliente;
     private String placaVehiculo;
     private String transportador;
     private String conductor;
     private String cedulaConductor;
+    private String nombreConductor;
+    private String empresaTransporte;
     private LocalDate fechaDespacho;
     private LocalTime horaDespacho;
     private LocalDate fechaEntrega;
@@ -24,6 +28,12 @@ public class RemisionDataDTO {
     public String getNumeroRemision() { return numeroRemision; }
     public void setNumeroRemision(String numeroRemision) { this.numeroRemision = numeroRemision; }
 
+    public String getNombreCliente() { return nombreCliente; }
+    public void setNombreCliente(String nombreCliente) { this.nombreCliente = nombreCliente; }
+
+    public String getNitCliente() { return nitCliente; }
+    public void setNitCliente(String nitCliente) { this.nitCliente = nitCliente; }
+
     public String getPlacaVehiculo() { return placaVehiculo; }
     public void setPlacaVehiculo(String placaVehiculo) { this.placaVehiculo = placaVehiculo; }
 
@@ -35,6 +45,12 @@ public class RemisionDataDTO {
 
     public String getCedulaConductor() { return cedulaConductor; }
     public void setCedulaConductor(String cedulaConductor) { this.cedulaConductor = cedulaConductor; }
+
+    public String getNombreConductor() { return nombreConductor; }
+    public void setNombreConductor(String nombreConductor) { this.nombreConductor = nombreConductor; }
+
+    public String getEmpresaTransporte() { return empresaTransporte; }
+    public void setEmpresaTransporte(String empresaTransporte) { this.empresaTransporte = empresaTransporte; }
 
     public LocalDate getFechaDespacho() { return fechaDespacho; }
     public void setFechaDespacho(LocalDate fechaDespacho) { this.fechaDespacho = fechaDespacho; }

@@ -3,6 +3,7 @@ package com.gmt.inventorysystem.controller;
 import com.gmt.inventorysystem.dto.ProcesamientoResponseDTO;
 import com.gmt.inventorysystem.service.PdfProcessingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -18,48 +19,61 @@ public class DocumentoController {
 
     // Mostrar formulario para subir documentos
     @GetMapping("/subir")
-    public String mostrarFormularioSubida(Model model) {
+    public String mostrarFormularioSubida(Model model,
+                                          @RequestParam(value = "exito", required = false) String exito,
+                                          @RequestParam(value = "error", required = false) String error) {
+
+        if (exito != null) {
+            model.addAttribute("success", exito);
+        }
+        if (error != null) {
+            model.addAttribute("error", error);
+        }
+
         return "subir-documentos";
     }
 
-    // Procesar documentos subidos
+    // Endpoint para previsualizar datos extraídos (AJAX)
+    @PostMapping("/previsualizar")
+    @ResponseBody
+    public ResponseEntity<ProcesamientoResponseDTO> previsualizarDocumentos(
+            @RequestParam("archivoRemision") MultipartFile archivoRemision,
+            @RequestParam("archivoFactura") MultipartFile archivoFactura) {
+
+        ProcesamientoResponseDTO resultado = pdfProcessingService.extraerDatosPrueba(archivoRemision, archivoFactura);
+        return ResponseEntity.ok(resultado);
+    }
+
+    // Procesar documentos subidos - ACTUALIZADO PARA DATOS MANUALES
     @PostMapping("/procesar")
-    public String procesarDocumentos(
+    @ResponseBody
+    public ResponseEntity<ProcesamientoResponseDTO> procesarDocumentos(
             @RequestParam("archivoRemision") MultipartFile archivoRemision,
             @RequestParam("archivoFactura") MultipartFile archivoFactura,
             @RequestParam(value = "usuario", defaultValue = "Sistema") String usuario,
-            RedirectAttributes redirectAttributes) {
+            @RequestParam(value = "pesoTotal", required = false) Double pesoTotal,
+            @RequestParam(value = "valorTotal", required = false) Double valorTotal,
+            @RequestParam(value = "placaVehiculo", required = false) String placaVehiculo) {
 
-        // Validar que se hayan subido archivos
+        // Validaciones básicas
         if (archivoRemision.isEmpty() || archivoFactura.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Debe subir ambos archivos (remisión y factura)");
-            return "redirect:/documentos/subir";
+            return ResponseEntity.badRequest().body(new ProcesamientoResponseDTO(false, "Debe subir ambos archivos (remisión y factura)"));
         }
 
-        // Validar que sean PDFs
         if (!archivoRemision.getContentType().equals("application/pdf") ||
                 !archivoFactura.getContentType().equals("application/pdf")) {
-            redirectAttributes.addFlashAttribute("error", "Ambos archivos deben ser PDF");
-            return "redirect:/documentos/subir";
+            return ResponseEntity.badRequest().body(new ProcesamientoResponseDTO(false, "Ambos archivos deben ser PDF"));
         }
 
         try {
-            // Procesar documentos
+            // Procesar documentos con datos manuales
             ProcesamientoResponseDTO resultado = pdfProcessingService.procesarDocumentos(
-                    archivoRemision, archivoFactura, usuario);
+                    archivoRemision, archivoFactura, usuario, pesoTotal, valorTotal, placaVehiculo);
 
-            if (resultado.isSuccess()) {
-                redirectAttributes.addFlashAttribute("success", resultado.getMessage());
-                redirectAttributes.addFlashAttribute("detalles", resultado);
-            } else {
-                redirectAttributes.addFlashAttribute("error", resultado.getMessage());
-            }
+            return ResponseEntity.ok(resultado);
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error",
-                    "Error procesando documentos: " + e.getMessage());
+            return ResponseEntity.badRequest().body(new ProcesamientoResponseDTO(false, "Error procesando documentos: " + e.getMessage()));
         }
-
-        return "redirect:/documentos/subir";
     }
 }

@@ -9,66 +9,57 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class ProductoService {
+public class ProductoService extends BaseService<Producto, String> {
 
     @Autowired
     private ProductoRepository productoRepository;
 
-    // Crear un nuevo producto
     public Producto crearProducto(Producto producto) {
-        // Validar que la referencia no exista
         if (productoRepository.existsByReferencia(producto.getReferencia())) {
             throw new RuntimeException("Ya existe un producto con la referencia: " + producto.getReferencia());
         }
 
-        // Validar categoría
         validarCategoria(producto.getCategoria());
-
-        // Validar proveedor
         validarProveedor(producto.getProveedor());
+
+        if (producto.getPacasPorEstiba() == null || producto.getPacasPorEstiba() <= 0) {
+            producto.setPacasPorEstiba(100);
+        }
 
         return productoRepository.save(producto);
     }
 
-    // Obtener todos los productos
     public List<Producto> obtenerTodosLosProductos() {
         return productoRepository.findAll();
     }
 
-    // Obtener producto por ID
-    public Optional<Producto> obtenerProductoPorId(Long id) {
+    public Optional<Producto> obtenerProductoPorId(String id) {
         return productoRepository.findById(id);
     }
 
-    // Obtener producto por referencia
     public Optional<Producto> obtenerProductoPorReferencia(String referencia) {
         return productoRepository.findByReferencia(referencia);
     }
 
-    // Actualizar producto por ID
-    public Producto actualizarProducto(Long id, Producto productoActualizado) {
+    public Producto actualizarProducto(String id, Producto productoActualizado) {
         return productoRepository.findById(id)
                 .map(productoExistente -> {
-                    // Validar que la referencia no esté duplicada (si se cambia)
                     if (productoActualizado.getReferencia() != null &&
                             !productoActualizado.getReferencia().equals(productoExistente.getReferencia()) &&
                             productoRepository.existsByReferencia(productoActualizado.getReferencia())) {
                         throw new RuntimeException("Ya existe un producto con la referencia: " + productoActualizado.getReferencia());
                     }
 
-                    // Validar categoría si se está actualizando
                     if (productoActualizado.getCategoria() != null) {
                         validarCategoria(productoActualizado.getCategoria());
                         productoExistente.setCategoria(productoActualizado.getCategoria());
                     }
 
-                    // Validar proveedor si se está actualizando
                     if (productoActualizado.getProveedor() != null) {
                         validarProveedor(productoActualizado.getProveedor());
                         productoExistente.setProveedor(productoActualizado.getProveedor());
                     }
 
-                    // Actualizar otros campos
                     if (productoActualizado.getReferencia() != null) {
                         productoExistente.setReferencia(productoActualizado.getReferencia());
                     }
@@ -84,38 +75,43 @@ public class ProductoService {
                     if (productoActualizado.getCantidadStock() != null) {
                         productoExistente.setCantidadStock(productoActualizado.getCantidadStock());
                     }
+                    if (productoActualizado.getPesoPorPaca() != null) {
+                        productoExistente.setPesoPorPaca(productoActualizado.getPesoPorPaca());
+                    }
+                    if (productoActualizado.getUnidadesPorPaca() != null) {
+                        productoExistente.setUnidadesPorPaca(productoActualizado.getUnidadesPorPaca());
+                    }
+                    if (productoActualizado.getPacasPorEstiba() != null) {
+                        productoExistente.setPacasPorEstiba(productoActualizado.getPacasPorEstiba());
+                    }
+                    if (productoActualizado.getStockMinimo() != null) {
+                        productoExistente.setStockMinimo(productoActualizado.getStockMinimo());
+                    }
 
                     return productoRepository.save(productoExistente);
                 })
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + id));
     }
 
-    // Eliminar producto por ID
-    public void eliminarProducto(Long id) {
-        if (!productoRepository.existsById(id)) {
-            throw new RuntimeException("Producto no encontrado con ID: " + id);
-        }
+    public void eliminarProducto(String id) {
+        validateEntityExists(productoRepository, id, "Producto");
         productoRepository.deleteById(id);
     }
 
-    // Obtener productos por categoría
     public List<Producto> obtenerProductosPorCategoria(String categoria) {
         validarCategoria(categoria);
         return productoRepository.findByCategoria(categoria);
     }
 
-    // Obtener productos por proveedor
     public List<Producto> obtenerProductosPorProveedor(String proveedor) {
         validarProveedor(proveedor);
         return productoRepository.findByProveedor(proveedor);
     }
 
-    // Obtener productos con bajo stock
     public List<Producto> obtenerProductosBajoStock() {
         return productoRepository.findProductosBajoStockMinimo();
     }
 
-    // Métodos de validación
     private void validarCategoria(String categoria) {
         if (categoria != null &&
                 !categoria.equals("AZUCAR_BLANCA") &&

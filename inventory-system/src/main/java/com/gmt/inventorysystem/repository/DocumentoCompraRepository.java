@@ -37,4 +37,21 @@ public interface DocumentoCompraRepository extends JpaRepository<DocumentoCompra
     // Buscar documento específico con sus movimientos cargados
     @Query("SELECT dc FROM DocumentoCompra dc LEFT JOIN FETCH dc.movimientos WHERE dc.id = :id")
     Optional<DocumentoCompra> findByIdWithMovimientos(@Param("id") Long id);
+
+    // NUEVOS MÉTODOS PARA CLIENTE Y CONDUCTOR
+    // Buscar documentos por cliente
+    @Query("SELECT dc FROM DocumentoCompra dc WHERE dc.cliente.nit = :nitCliente ORDER BY dc.fechaFacturacion DESC")
+    List<DocumentoCompra> findByClienteNit(@Param("nitCliente") String nitCliente);
+
+    // Buscar documentos por conductor
+    @Query("SELECT dc FROM DocumentoCompra dc WHERE dc.conductor.cedula = :cedulaConductor ORDER BY dc.fechaFacturacion DESC")
+    List<DocumentoCompra> findByConductorCedula(@Param("cedulaConductor") String cedulaConductor);
+
+    // Buscar documento con cliente y conductor cargados
+    @Query("SELECT dc FROM DocumentoCompra dc LEFT JOIN FETCH dc.cliente LEFT JOIN FETCH dc.conductor WHERE dc.id = :id")
+    Optional<DocumentoCompra> findByIdWithClienteAndConductor(@Param("id") Long id);
+
+    // Buscar todos los documentos con cliente y conductor
+    @Query("SELECT dc FROM DocumentoCompra dc LEFT JOIN FETCH dc.cliente LEFT JOIN FETCH dc.conductor ORDER BY dc.fechaFacturacion DESC")
+    List<DocumentoCompra> findAllWithClienteAndConductor();
 }

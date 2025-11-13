@@ -11,85 +11,68 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/productos")
-public class ProductoController {
+public class ProductoController extends BaseController<Producto, String> {
 
     @Autowired
     private ProductoService productoService;
 
-    // Crear nuevo producto
     @PostMapping
     public ResponseEntity<?> crearProducto(@RequestBody Producto producto) {
         try {
             Producto nuevoProducto = productoService.crearProducto(producto);
             return ResponseEntity.ok(nuevoProducto);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return handleCreate(e);
         }
     }
 
-    // Obtener todos los productos
     @GetMapping
     public List<Producto> obtenerTodosLosProductos() {
         return productoService.obtenerTodosLosProductos();
     }
 
-    // Obtener producto por ID
     @GetMapping("/id/{id}")
-    public ResponseEntity<?> obtenerProductoPorId(@PathVariable Long id) {
+    public ResponseEntity<?> obtenerProductoPorId(@PathVariable String id) {
         Optional<Producto> producto = productoService.obtenerProductoPorId(id);
-        if (producto.isPresent()) {
-            return ResponseEntity.ok(producto.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        return handleFindById(producto, "Producto");
     }
 
-    // Obtener producto por referencia
     @GetMapping("/referencia/{referencia}")
     public ResponseEntity<?> obtenerProductoPorReferencia(@PathVariable String referencia) {
         Optional<Producto> producto = productoService.obtenerProductoPorReferencia(referencia);
-        if (producto.isPresent()) {
-            return ResponseEntity.ok(producto.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        return handleFindById(producto, "Producto");
     }
 
-    // Actualizar producto por ID
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarProducto(@PathVariable Long id, @RequestBody Producto producto) {
+    public ResponseEntity<?> actualizarProducto(@PathVariable String id, @RequestBody Producto producto) {
         try {
             Producto productoActualizado = productoService.actualizarProducto(id, producto);
             return ResponseEntity.ok(productoActualizado);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return handleUpdate(e);
         }
     }
 
-    // Eliminar producto por ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarProducto(@PathVariable Long id) {
+    public ResponseEntity<?> eliminarProducto(@PathVariable String id) {
         try {
             productoService.eliminarProducto(id);
-            return ResponseEntity.ok().body("Producto eliminado correctamente");
+            return handleSuccess("Producto eliminado correctamente");
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return handleDelete(e);
         }
     }
 
-    // Obtener productos por categoría
     @GetMapping("/categoria/{categoria}")
     public List<Producto> obtenerProductosPorCategoria(@PathVariable String categoria) {
         return productoService.obtenerProductosPorCategoria(categoria);
     }
 
-    // Obtener productos por proveedor
     @GetMapping("/proveedor/{proveedor}")
     public List<Producto> obtenerProductosPorProveedor(@PathVariable String proveedor) {
         return productoService.obtenerProductosPorProveedor(proveedor);
     }
 
-    // Obtener productos con bajo stock
     @GetMapping("/bajo-stock")
     public List<Producto> obtenerProductosBajoStock() {
         return productoService.obtenerProductosBajoStock();

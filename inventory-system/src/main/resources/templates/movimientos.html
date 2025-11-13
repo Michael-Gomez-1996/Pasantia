@@ -5,112 +5,212 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movimientos - GMT Inventory</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .movimiento-card { border-left: 4px solid; margin-bottom: 10px; }
+        .movimiento-card { border-left: 4px solid; margin-bottom: 10px; transition: all 0.3s ease; }
+        .movimiento-card:hover { transform: translateX(5px); }
         .entrada { border-left-color: #28a745; background-color: #f8fff9; }
         .salida { border-left-color: #dc3545; background-color: #fff5f5; }
         .ajuste { border-left-color: #ffc107; background-color: #fffdf5; }
-        .documento-card { border: 2px solid #007bff; margin-bottom: 20px; }
+        .documento-card { border: 2px solid #007bff; margin-bottom: 20px; transition: all 0.3s ease; }
+        .documento-card:hover { box-shadow: 0 4px 8px rgba(0,123,255,0.2); }
         .producto-item { border-bottom: 1px solid #eee; padding: 8px 0; }
         .producto-item:last-child { border-bottom: none; }
+        .form-card { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .nav-pills .nav-link.active { background-color: #0d6efd; }
+        .stats-card { border-left: 4px solid #0d6efd; }
+        .stats-number { font-size: 1.8rem; font-weight: bold; }
+        .search-highlight { background-color: #fff3cd !important; border: 2px solid #ffc107 !important; }
+        .filtros-section { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .filtro-activo { background-color: #e7f1ff !important; border-color: #0d6efd !important; }
+        .entrada-manual-btn { background: linear-gradient(135deg, #28a745, #20c997); border: none; font-weight: bold; color: white; }
+        .salida-manual-btn { background: linear-gradient(135deg, #dc3545, #e35d6a); border: none; font-weight: bold; color: white; }
+        .averia-btn { background: linear-gradient(135deg, #ffc107, #fd7e14); border: none; font-weight: bold; color: white; }
+        .averia-salida-btn { background: linear-gradient(135deg, #fd7e14, #e35d6a); border: none; font-weight: bold; color: white; }
+        .salida-manual-btn:hover { background: linear-gradient(135deg, #c82333, #dc3545) !important; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3); }
+        .averia-btn:hover { background: linear-gradient(135deg, #e0a800, #fd7e14) !important; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3); }
+        .averia-salida-btn:hover { background: linear-gradient(135deg, #e35d6a, #fd7e14) !important; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(253, 126, 20, 0.3); }
+        .producto-table tbody tr:hover { background-color: #f8f9fa; }
+        .referencia-valida { border-color: #28a745 !important; background-color: #f8fff9 !important; }
+        .referencia-invalida { border-color: #dc3545 !important; background-color: #fff5f5 !important; }
+        .badge-entrada { background-color: #28a745; }
+        .badge-salida { background-color: #dc3545; }
+
+        /* Estilos para entrada manual */
+        .search-suggestions { position: absolute; z-index: 1000; width: 100%; background: white; border: 1px solid #dee2e6; border-radius: 0.375rem; max-height: 200px; overflow-y: auto; }
+        .search-suggestion-item { padding: 0.5rem 1rem; cursor: pointer; border-bottom: 1px solid #f8f9fa; }
+        .search-suggestion-item:hover { background-color: #f8f9fa; }
+        .search-suggestion-item:last-child { border-bottom: none; }
+        .rango-rapido-btn { margin: 2px; }
+        .badge-small { font-size: 0.7em; }
+
+        /* Mejora visual para los campos de peso */
+        .input-group-peso { position: relative; }
+        .input-group-peso::after { content: "kg"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #6c757d; font-weight: bold; }
+
+        /* Nuevos estilos para botones reorganizados */
+        .botones-superiores { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+        .boton-movimiento { flex: 1; min-width: 200px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; transition: all 0.3s ease; white-space: nowrap; }
+        .boton-movimiento i { margin-right: 8px; font-size: 16px; }
+        .boton-movimiento:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+        @media (max-width: 768px) {
+            .botones-superiores { flex-direction: column; }
+            .boton-movimiento { min-width: 100%; }
+        }
     </style>
 </head>
 <body>
+<!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="/">🏭 GMT Inventory</a>
-        <div class="navbar-nav me-auto">
-            <a class="nav-link" href="/">Dashboard</a>
-            <a class="nav-link" href="/productos">Productos</a>
-            <a class="nav-link" href="/movimientos">Movimientos</a>
-            <a class="nav-link" href="/reportes">Reportes</a>
-        </div>
-        <div class="navbar-nav">
-            <span class="navbar-text me-3">👤 Usuario: <strong>admin</strong></span>
-            <form th:action="@{/logout}" method="post" class="d-inline">
-                <button type="submit" class="btn btn-outline-light btn-sm">Cerrar Sesión</button>
-            </form>
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-warehouse me-2"></i>GMT Inventory
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="/">
+                    <i class="fas fa-home me-1"></i>Dashboard
+                </a>
+                <a class="nav-link" href="/productos">
+                    <i class="fas fa-boxes me-1"></i>Productos
+                </a>
+                <a class="nav-link active" href="/movimientos">
+                    <i class="fas fa-exchange-alt me-1"></i>Movimientos
+                </a>
+                <a class="nav-link" href="/documentos/subir">
+                    <i class="fas fa-file-upload me-1"></i>Subir Documentos
+                </a>
+                <a class="nav-link" href="/reportes">
+                    <i class="fas fa-chart-bar me-1"></i>Reportes
+                </a>
+            </div>
+            <div class="navbar-nav">
+                    <span class="navbar-text me-3">
+                        <i class="fas fa-user me-1"></i>Sistema GMT
+                    </span>
+            </div>
         </div>
     </div>
 </nav>
 
 <div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-exchange-alt me-2"></i>Movimientos de Inventario</h1>
+        <div class="botones-superiores">
+            <!-- ✅ BOTÓN REGISTRAR AVERÍA -->
+            <button class="boton-movimiento averia-btn" onclick="abrirModalAveria()">
+                <i class="fas fa-exclamation-triangle me-1"></i>Registrar Avería
+            </button>
+            <!-- ✅ BOTÓN SACAR AVERÍAS AL INGENIO -->
+            <button class="boton-movimiento averia-salida-btn" onclick="abrirModalSalidaAverias()">
+                <i class="fas fa-truck me-1"></i>Sacar Averías al Ingenio
+            </button>
+            <!-- ✅ BOTÓN ENTRADA MANUAL -->
+            <button class="boton-movimiento entrada-manual-btn" onclick="abrirModalEntradaManual()">
+                <i class="fas fa-plus-circle me-1"></i>Nueva Entrada Manual
+            </button>
+            <!-- ✅ BOTÓN SALIDA MANUAL -->
+            <button class="boton-movimiento salida-manual-btn" onclick="abrirModalSalidaManual()">
+                <i class="fas fa-minus-circle me-1"></i>Nueva Salida Manual
+            </button>
+        </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4" id="statsContainer">
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Total Movimientos</h6>
+                            <div class="stats-number text-primary" id="totalMovimientos">0</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exchange-alt fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Documentos PDF</h6>
+                            <div class="stats-number text-info" id="totalDocumentos">0</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-pdf fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Movimientos Manuales</h6>
+                            <div class="stats-number text-warning" id="totalManuales">0</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-hand-paper fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Última Actualización</h6>
+                            <div class="stats-number text-success" id="ultimaActualizacion">Ahora</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
-        <!-- Formularios de movimientos manuales -->
+        <!-- Formulario de AJUSTE MANUAL -->
         <div class="col-md-4">
-            <!-- Entrada -->
-            <div class="card mb-3">
-                <div class="card-header bg-success text-white">
-                    <h6>📥 Entrada Manual</h6>
-                </div>
-                <div class="card-body">
-                    <form id="formEntrada">
-                        <div class="mb-2">
-                            <label class="form-label">Referencia Producto</label>
-                            <input type="text" class="form-control" id="entradaProductoReferencia" required>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Cantidad</label>
-                            <input type="number" class="form-control" id="entradaCantidad" required min="1">
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Motivo</label>
-                            <input type="text" class="form-control" id="entradaMotivo" required>
-                        </div>
-                        <button type="button" class="btn btn-success w-100" onclick="registrarEntrada()">
-                            Registrar Entrada
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Salida -->
-            <div class="card mb-3">
-                <div class="card-header bg-danger text-white">
-                    <h6>📤 Salida Manual</h6>
-                </div>
-                <div class="card-body">
-                    <form id="formSalida">
-                        <div class="mb-2">
-                            <label class="form-label">Referencia Producto</label>
-                            <input type="text" class="form-control" id="salidaProductoReferencia" required>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Cantidad</label>
-                            <input type="number" class="form-control" id="salidaCantidad" required min="1">
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Motivo</label>
-                            <input type="text" class="form-control" id="salidaMotivo" required>
-                        </div>
-                        <button type="button" class="btn btn-danger w-100" onclick="registrarSalida()">
-                            Registrar Salida
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Ajuste -->
             <div class="card">
                 <div class="card-header bg-warning text-dark">
-                    <h6>⚖ Ajuste Manual</h6>
+                    <h6 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Ajuste Manual</h6>
                 </div>
                 <div class="card-body">
                     <form id="formAjuste">
                         <div class="mb-2">
-                            <label class="form-label">Referencia Producto</label>
-                            <input type="text" class="form-control" id="ajusteProductoReferencia" required>
+                            <label class="form-label">Referencia Producto *</label>
+                            <input type="text" class="form-control" id="ajusteProductoReferencia"
+                                   required placeholder="Ej: 1239">
                         </div>
                         <div class="mb-2">
-                            <label class="form-label">Nuevo Stock</label>
-                            <input type="number" class="form-control" id="ajusteNuevoStock" required min="0">
+                            <label class="form-label">Nuevo Stock *</label>
+                            <input type="number" class="form-control" id="ajusteNuevoStock"
+                                   required min="0" placeholder="0">
                         </div>
                         <div class="mb-2">
-                            <label class="form-label">Motivo</label>
-                            <input type="text" class="form-control" id="ajusteMotivo" required>
+                            <label class="form-label">Motivo *</label>
+                            <input type="text" class="form-control" id="ajusteMotivo"
+                                   required placeholder="Ej: Conteo físico">
                         </div>
                         <button type="button" class="btn btn-warning w-100" onclick="registrarAjuste()">
-                            Registrar Ajuste
+                            <i class="fas fa-sliders-h me-1"></i>Registrar Ajuste
                         </button>
                     </form>
                 </div>
@@ -121,28 +221,87 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h5>📋 Historial de Movimientos</h5>
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historial de Movimientos</h5>
                 </div>
                 <div class="card-body">
-                    <!-- Filtros -->
+                    <!-- Filtros principales -->
                     <div class="mb-3">
-                        <button class="btn btn-outline-primary btn-sm" onclick="cargarTodosMovimientos()">
-                            Todos los Movimientos
-                        </button>
-                        <button class="btn btn-outline-success btn-sm" onclick="cargarMovimientosManuales()">
-                            Solo Manuales
-                        </button>
-                        <button class="btn btn-outline-info btn-sm" onclick="cargarDocumentosCompra()">
-                            Documentos Agrupados
-                        </button>
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-outline-primary active" onclick="cargarTodosMovimientos()" id="btnTodos">
+                                <i class="fas fa-list me-1"></i>Todos
+                            </button>
+                            <button class="btn btn-outline-success" onclick="cargarMovimientosManuales()" id="btnManuales">
+                                <i class="fas fa-hand-paper me-1"></i>Manuales
+                            </button>
+                            <button class="btn btn-outline-info" onclick="cargarDocumentosCompra()" id="btnDocumentos">
+                                <i class="fas fa-file-invoice me-1"></i>Documentos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Búsqueda por referencia -->
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="searchReferencia"
+                                   placeholder="Buscar por referencia de producto...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="buscarPorReferencia()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" type="button" onclick="limpiarBusqueda()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div id="sugerenciasBusqueda" class="search-suggestions d-none"></div>
+                    </div>
+
+                    <!-- Filtros por fecha -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-body py-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-3">
+                                        <strong><i class="fas fa-filter me-2"></i>Filtrar por Fecha:</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Fecha Inicio</label>
+                                        <input type="date" class="form-control form-control-sm" id="fechaInicio">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Fecha Fin</label>
+                                        <input type="date" class="form-control form-control-sm" id="fechaFin">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button class="btn btn-primary btn-sm mt-3" onclick="filtrarPorFecha()">
+                                            <i class="fas fa-filter me-1"></i>Filtrar
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm mt-3" onclick="limpiarFiltrosFecha()">
+                                            <i class="fas fa-times me-1"></i>Limpiar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <small class="text-muted">Rangos rápidos:</small>
+                                        <button class="btn btn-sm btn-outline-secondary rango-rapido-btn" onclick="aplicarRangoPredefinido('Hoy')">Hoy</button>
+                                        <button class="btn btn-sm btn-outline-secondary rango-rapido-btn" onclick="aplicarRangoPredefinido('Ayer')">Ayer</button>
+                                        <button class="btn btn-sm btn-outline-secondary rango-rapido-btn" onclick="aplicarRangoPredefinido('UltimaSemana')">Última semana</button>
+                                        <button class="btn btn-sm btn-outline-secondary rango-rapido-btn" onclick="aplicarRangoPredefinido('EsteMes')">Este mes</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="movimientosList" class="mb-3">
                         <!-- Los movimientos se cargarán aquí -->
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-sync fa-spin fa-2x mb-3"></i>
+                            <p>Cargando movimientos...</p>
+                        </div>
                     </div>
 
-                    <button class="btn btn-outline-primary w-100" onclick="cargarTodosMovimientos()">
-                        🔄 Actualizar
+                    <button class="btn btn-outline-primary w-100 mt-3" onclick="cargarTodosMovimientos()">
+                        <i class="fas fa-sync-alt me-1"></i>Actualizar
                     </button>
                 </div>
             </div>
@@ -155,7 +314,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">📋 Detalles del Documento</h5>
+                <h5 class="modal-title"><i class="fas fa-file-invoice me-2"></i>Detalles del Documento</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="documentoModalBody">
@@ -165,63 +324,1909 @@
     </div>
 </div>
 
+<!-- Modal para entrada manual -->
+<div class="modal fade" id="modalEntradaManual" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nueva Entrada Manual</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Datos de la remisión -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Número de Remisión *</label>
+                        <input type="text" class="form-control" id="numeroRemisionEntrada"
+                               placeholder="Ej: RM-001234" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Origen del Ingenio *</label>
+                        <select class="form-select" id="origenIngenioEntrada" required>
+                            <option value="">Seleccionar origen...</option>
+                            <option value="ING_MAYAGUEZ">Ingenio Mayagüez</option>
+                            <option value="ING_SAN_CARLOS">Ingenio San Carlos</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Placa del Vehículo *</label>
+                        <input type="text" class="form-control" id="placaVehiculoEntrada"
+                               placeholder="Ej: ABC123" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha de Entrada *</label>
+                        <input type="date" class="form-control" id="fechaEntrada" required>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <label class="form-label">Observaciones</label>
+                        <input type="text" class="form-control" id="observacionesEntrada"
+                               placeholder="Ej: Entrada por compra directa">
+                    </div>
+                </div>
+
+                <!-- Agregar productos -->
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-boxes me-2"></i>Agregar Productos</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" id="nuevaReferenciaEntrada"
+                                       placeholder="Referencia del producto" onblur="validarReferenciaEntrada()">
+                                <div class="form-text" id="mensajeValidacionEntrada"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" class="form-control" id="nuevaCantidadEntrada"
+                                       placeholder="Cantidad" min="1" value="1">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-primary w-100" onclick="agregarProductoEntrada()" id="btnAgregarProductoEntrada" disabled>
+                                    <i class="fas fa-plus me-1"></i>Agregar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de productos agregados -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-list me-2"></i>Productos a Ingresar</h6>
+                        <span class="badge bg-light text-dark" id="contadorProductosEntrada">0 productos</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm producto-table" id="tablaProductosEntrada">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Referencia</th>
+                                    <th>Cantidad</th>
+                                    <th>Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody id="cuerpoTablaProductosEntrada">
+                                <!-- Los productos se agregarán aquí dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="mensajeTablaVaciaEntrada" class="text-center text-muted py-3">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay productos agregados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-success" onclick="procesarEntradaManual()" id="btnProcesarEntrada" disabled>
+                    <i class="fas fa-check me-1"></i>Procesar Entrada
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para salida manual -->
+<div class="modal fade" id="modalSalidaManual" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-minus-circle me-2"></i>Nueva Salida Manual</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Datos de la salida -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Número de Documento *</label>
+                        <input type="text" class="form-control" id="numeroDocumentoSalida"
+                               placeholder="Ej: SAL-001234" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Destino *</label>
+                        <input type="text" class="form-control" id="destinoSalida"
+                               placeholder="Ej: Cliente XYZ" required>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Placa del Vehículo</label>
+                        <input type="text" class="form-control" id="placaVehiculoSalida"
+                               placeholder="Ej: ABC123">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha de Salida *</label>
+                        <input type="date" class="form-control" id="fechaSalida" required>
+                    </div>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <label class="form-label">Observaciones</label>
+                        <input type="text" class="form-control" id="observacionesSalida"
+                               placeholder="Ej: Salida por venta directa">
+                    </div>
+                </div>
+
+                <!-- Agregar productos -->
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-boxes me-2"></i>Agregar Productos</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control" id="nuevaReferenciaSalida"
+                                       placeholder="Referencia del producto" onblur="validarReferenciaSalida()">
+                                <div class="form-text" id="mensajeValidacionSalida"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" class="form-control" id="nuevaCantidadSalida"
+                                       placeholder="Cantidad" min="1" value="1">
+                            </div>
+                            <div class="col-md-2">
+                                <div class="input-group-peso">
+                                    <input type="number" class="form-control" id="nuevaPesoSalida"
+                                           placeholder="Peso" min="0" step="0.1" value="0">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-primary w-100" onclick="agregarProductoSalida()" id="btnAgregarProductoSalida" disabled>
+                                    <i class="fas fa-plus me-1"></i>Agregar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de productos agregados -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-list me-2"></i>Productos a Despachar</h6>
+                        <span class="badge bg-light text-dark" id="contadorProductosSalida">0 productos</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm producto-table" id="tablaProductosSalida">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Referencia</th>
+                                    <th>Cantidad</th>
+                                    <th>Peso (kg)</th>
+                                    <th>Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody id="cuerpoTablaProductosSalida">
+                                <!-- Los productos se agregarán aquí dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="mensajeTablaVaciaSalida" class="text-center text-muted py-3">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay productos agregados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="procesarSalidaManual()" id="btnProcesarSalida" disabled>
+                    <i class="fas fa-check me-1"></i>Procesar Salida
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para registrar averías -->
+<div class="modal fade" id="modalAveria" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Registrar Avería</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Datos de la avería -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Producto *</label>
+                        <input type="text" class="form-control" id="averiaProductoReferencia"
+                               placeholder="Referencia del producto" onblur="validarReferenciaAveria()">
+                        <div class="form-text" id="mensajeValidacionAveria"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cantidad Averiada *</label>
+                        <input type="number" class="form-control" id="averiaCantidad"
+                               placeholder="Cantidad de unidades" min="1" value="1">
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo de Avería *</label>
+                        <select class="form-select" id="averiaTipo" required onchange="validarFormularioAveria()">
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="ENTRADA">Avería de Entrada</option>
+                            <option value="DEVOLUCION">Avería de Devolución</option>
+                            <option value="OPERACION">Avería de Operación</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Número de Remisión</label>
+                        <input type="text" class="form-control" id="averiaRemision"
+                               placeholder="Opcional - Ej: RM-001234">
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha de Detección *</label>
+                        <input type="date" class="form-control" id="averiaFecha" required onchange="validarFormularioAveria()" value="">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Usuario</label>
+                        <input type="text" class="form-control" id="averiaUsuario"
+                               placeholder="Ej: Operario XYZ" value="SISTEMA">
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <label class="form-label">Observaciones *</label>
+                        <textarea class="form-control" id="averiaObservaciones" rows="3"
+                                  placeholder="Describa el daño o motivo de la avería..." required oninput="validarFormularioAveria()"></textarea>
+                    </div>
+                </div>
+
+                <!-- Información del producto -->
+                <div class="card mb-3" id="infoProductoAveria" style="display: none;">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información del Producto</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Nombre:</strong> <span id="infoProductoNombre">-</span><br>
+                                <strong>Categoría:</strong> <span id="infoProductoCategoria">-</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Stock Actual:</strong> <span id="infoProductoStock">-</span><br>
+                                <strong>Proveedor:</strong> <span id="infoProductoProveedor">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-warning" onclick="registrarAveria()" id="btnRegistrarAveria" disabled>
+                    <i class="fas fa-exclamation-triangle me-1"></i>Registrar Avería
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para SACAR AVERÍAS AL INGENIO -->
+<div class="modal fade" id="modalSalidaAverias" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-truck me-2"></i>Sacar Averías al Ingenio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Datos del envío -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Número de Remisión *</label>
+                        <input type="text" class="form-control" id="salidaAveriaNumeroRemision"
+                               placeholder="Ej: DEV-001234" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ingenio Destino *</label>
+                        <select class="form-select" id="salidaAveriaIngenioDestino" required>
+                            <option value="">Seleccionar ingenio...</option>
+                            <option value="ING_MAYAGUEZ">Ingenio Mayagüez</option>
+                            <option value="ING_SAN_CARLOS">Ingenio San Carlos</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Placa del Vehículo</label>
+                        <input type="text" class="form-control" id="salidaAveriaPlacaVehiculo"
+                               placeholder="Ej: ABC123">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha de Devolución *</label>
+                        <input type="date" class="form-control" id="salidaAveriaFechaDevolucion" required>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <label class="form-label">Observaciones</label>
+                        <textarea class="form-control" id="salidaAveriaObservaciones" rows="2"
+                                  placeholder="Observaciones sobre la devolución..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Lista de productos con averías disponibles -->
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-boxes me-2"></i>Productos con Averías Disponibles</h6>
+                        <button type="button" class="btn btn-light btn-sm" onclick="cargarProductosConAverias()">
+                            <i class="fas fa-sync-alt me-1"></i>Actualizar
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="listaProductosAverias" class="mb-3">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Cargando productos con averías...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen de productos seleccionados -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-list me-2"></i>Productos a Devolver</h6>
+                        <span class="badge bg-light text-dark" id="contadorProductosAverias">0 productos</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="resumenProductosAverias" class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Stock Averiado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody id="cuerpoResumenAverias">
+                                <!-- Se llenará dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="mensajeResumenVacio" class="text-center text-muted py-3">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay productos seleccionados para devolver</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-warning" onclick="procesarSalidaAverias()" id="btnProcesarSalidaAverias" disabled>
+                    <i class="fas fa-truck me-1"></i>Procesar Devolución
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Función para registrar entrada
-    async function registrarEntrada() {
-        const data = {
-            productoReferencia: document.getElementById('entradaProductoReferencia').value,
-            cantidad: parseInt(document.getElementById('entradaCantidad').value),
-            motivo: document.getElementById('entradaMotivo').value
-        };
+    // ==============================================
+    // VARIABLES GLOBALES PARA ENTRADA, SALIDA Y AVERÍAS
+    // ==============================================
+    let productosEntrada = [];
+    let productosSalida = [];
+    let productosAveriasSeleccionados = [];
+    let referenciaValidaEntrada = false;
+    let referenciaValidaSalida = false;
+    let referenciaValidaAveria = false;
+    let productoInfoAveria = null;
+
+    // ==============================================
+    // INICIALIZACIÓN
+    // ==============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaInicio').value = hoy;
+        document.getElementById('fechaFin').value = hoy;
+        document.getElementById('averiaFecha').value = hoy;
+        document.getElementById('salidaAveriaFechaDevolucion').value = hoy;
+
+        // Inicializar búsqueda avanzada
+        inicializarBusquedaAvanzada();
+
+        cargarTodosMovimientos();
+        actualizarEstadisticas();
+
+        // Validar que el peso sea numérico
+        document.getElementById('nuevaPesoSalida').addEventListener('input', function(e) {
+            const value = e.target.value;
+            if (value && isNaN(value)) {
+                e.target.classList.add('is-invalid');
+            } else {
+                e.target.classList.remove('is-invalid');
+            }
+        });
+
+        // Event listeners para validación en tiempo real de averías
+        document.getElementById('averiaCantidad').addEventListener('input', validarFormularioAveria);
+    });
+
+    // ==============================================
+    // FUNCIONES PARA SACAR AVERÍAS AL INGENIO
+    // ==============================================
+
+    // Abrir modal de salida de averías
+    function abrirModalSalidaAverias() {
+        // Resetear el modal
+        productosAveriasSeleccionados = [];
+
+        document.getElementById('salidaAveriaNumeroRemision').value = '';
+        document.getElementById('salidaAveriaIngenioDestino').value = '';
+        document.getElementById('salidaAveriaPlacaVehiculo').value = '';
+        document.getElementById('salidaAveriaFechaDevolucion').value = new Date().toISOString().split('T')[0];
+        document.getElementById('salidaAveriaObservaciones').value = '';
+        document.getElementById('btnProcesarSalidaAverias').disabled = true;
+
+        actualizarResumenAverias();
+        cargarProductosConAverias();
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalSalidaAverias'));
+        modal.show();
+    }
+
+    // Cargar productos con averías disponibles
+    async function cargarProductosConAverias() {
+        const listaProductos = document.getElementById('listaProductosAverias');
 
         try {
-            const response = await fetch('/api/movimientos/entrada', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+            listaProductos.innerHTML = '<div class="text-center text-muted py-2"><i class="fas fa-spinner fa-spin me-2"></i>Cargando productos...</div>';
+
+            const response = await fetch('/api/movimientos/productos-con-averias');
+            const productos = await response.json();
+
+            if (productos.length === 0) {
+                listaProductos.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No hay productos con stock averiado disponible
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            productos.forEach(producto => {
+                const yaSeleccionado = productosAveriasSeleccionados.find(p => p.referencia === producto.referencia);
+                const cantidadSeleccionada = yaSeleccionado ? yaSeleccionado.cantidad : 0;
+                const disponible = producto.stockAveriado - cantidadSeleccionada;
+
+                html += `
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <strong>${producto.referencia}</strong><br>
+                                <small class="text-muted">${producto.nombre}</small>
+                            </div>
+                            <div class="col-md-3">
+                                <small>Stock Averiado: <span class="badge bg-warning">${producto.stockAveriado}</span></small>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number"
+                                       class="form-control form-control-sm"
+                                       id="cantidad-${producto.referencia}"
+                                       min="1"
+                                       max="${disponible}"
+                                       value="${cantidadSeleccionada || 0}"
+                                       onchange="actualizarCantidadAveria('${producto.referencia}', this.value)"
+                                       ${disponible === 0 ? 'disabled' : ''}>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-sm ${yaSeleccionado ? 'btn-warning' : 'btn-outline-warning'}"
+                                        onclick="${yaSeleccionado ? `eliminarProductoAveria('${producto.referencia}')` : `agregarProductoAveria('${producto.referencia}', ${producto.stockAveriado})`}">
+                                    ${yaSeleccionado ? '<i class="fas fa-times"></i>' : '<i class="fas fa-plus"></i>'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
             });
 
-            if (response.ok) {
-                alert('✅ Entrada registrada correctamente');
-                document.getElementById('formEntrada').reset();
-                cargarTodosMovimientos();
-            } else {
-                const error = await response.text();
-                alert('❌ Error: ' + error);
-            }
+            listaProductos.innerHTML = html;
+
         } catch (error) {
-            alert('❌ Error de conexión: ' + error);
+            listaProductos.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error cargando productos: ${error.message}
+                </div>
+            `;
         }
     }
 
-    // Función para registrar salida
-    async function registrarSalida() {
-        const data = {
-            productoReferencia: document.getElementById('salidaProductoReferencia').value,
-            cantidad: parseInt(document.getElementById('salidaCantidad').value),
-            motivo: document.getElementById('salidaMotivo').value
+    // Función para agregar producto a la devolución
+    function agregarProductoAveria(referencia, stockMaximo) {
+        const cantidadInput = document.getElementById(`cantidad-${referencia}`);
+        const cantidad = parseInt(cantidadInput.value);
+
+        if (!cantidad || cantidad < 1) {
+            alert('La cantidad debe ser mayor a 0');
+            return;
+        }
+
+        if (cantidad > stockMaximo) {
+            alert(`No puede devolver más del stock averiado disponible (${stockMaximo})`);
+            return;
+        }
+
+        productosAveriasSeleccionados.push({
+            referencia: referencia,
+            cantidad: cantidad,
+            stockMaximo: stockMaximo
+        });
+
+        actualizarResumenAverias();
+        cargarProductosConAverias(); // Recargar para actualizar disponibilidades
+    }
+
+    // Función para eliminar producto de la devolución
+    function eliminarProductoAveria(referencia) {
+        productosAveriasSeleccionados = productosAveriasSeleccionados.filter(p => p.referencia !== referencia);
+        actualizarResumenAverias();
+        cargarProductosConAverias(); // Recargar para actualizar disponibilidades
+    }
+
+    // Función para actualizar cantidad de producto ya seleccionado
+    function actualizarCantidadAveria(referencia, nuevaCantidad) {
+        const producto = productosAveriasSeleccionados.find(p => p.referencia === referencia);
+        if (producto) {
+            const cantidad = parseInt(nuevaCantidad);
+            if (cantidad > 0 && cantidad <= producto.stockMaximo) {
+                producto.cantidad = cantidad;
+                actualizarResumenAverias();
+            }
+        }
+    }
+
+    // Actualizar resumen de productos seleccionados
+    function actualizarResumenAverias() {
+        const cuerpoResumen = document.getElementById('cuerpoResumenAverias');
+        const mensajeVacio = document.getElementById('mensajeResumenVacio');
+        const contador = document.getElementById('contadorProductosAverias');
+        const btnProcesar = document.getElementById('btnProcesarSalidaAverias');
+
+        // Actualizar contador
+        contador.textContent = `${productosAveriasSeleccionados.length} producto${productosAveriasSeleccionados.length !== 1 ? 's' : ''}`;
+
+        // Habilitar/deshabilitar botón de procesar
+        btnProcesar.disabled = productosAveriasSeleccionados.length === 0;
+
+        if (productosAveriasSeleccionados.length === 0) {
+            cuerpoResumen.innerHTML = '';
+            mensajeVacio.style.display = 'block';
+            return;
+        }
+
+        mensajeVacio.style.display = 'none';
+
+        let html = '';
+        productosAveriasSeleccionados.forEach((producto, index) => {
+            html += `
+            <tr>
+                <td><strong>${producto.referencia}</strong></td>
+                <td>${producto.cantidad}</td>
+                <td><span class="badge bg-warning">${producto.stockMaximo}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarProductoAveria('${producto.referencia}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            `;
+        });
+
+        cuerpoResumen.innerHTML = html;
+    }
+
+    // Procesar salida de averías al ingenio
+    async function procesarSalidaAverias() {
+        const numeroRemision = document.getElementById('salidaAveriaNumeroRemision').value.trim();
+        const ingenioDestino = document.getElementById('salidaAveriaIngenioDestino').value;
+        const placaVehiculo = document.getElementById('salidaAveriaPlacaVehiculo').value.trim();
+        const fechaDevolucion = document.getElementById('salidaAveriaFechaDevolucion').value;
+        const observaciones = document.getElementById('salidaAveriaObservaciones').value.trim();
+
+        // Validaciones
+        if (!numeroRemision) {
+            alert('El número de remisión es requerido');
+            return;
+        }
+
+        if (!ingenioDestino) {
+            alert('Debe seleccionar el ingenio destino');
+            return;
+        }
+
+        if (!fechaDevolucion) {
+            alert('La fecha de devolución es requerida');
+            return;
+        }
+
+        if (productosAveriasSeleccionados.length === 0) {
+            alert('Debe seleccionar al menos un producto para devolver');
+            return;
+        }
+
+        // Preparar datos
+        const datos = {
+            numeroRemision: numeroRemision,
+            ingenioDestino: ingenioDestino,
+            placaVehiculo: placaVehiculo,
+            fechaDevolucion: fechaDevolucion,
+            observaciones: observaciones,
+            productos: productosAveriasSeleccionados.map(p => ({
+                referencia: p.referencia,
+                cantidad: p.cantidad
+            }))
         };
 
         try {
-            const response = await fetch('/api/movimientos/salida', {
+            // Mostrar loading
+            document.getElementById('btnProcesarSalidaAverias').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Procesando...';
+            document.getElementById('btnProcesarSalidaAverias').disabled = true;
+
+            const response = await fetch('/api/movimientos/devolver-averias', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(datos)
+            });
+
+            const resultado = await response.json();
+
+            if (resultado.success) {
+                // Éxito
+                alert(`✅ ${resultado.message}\n\nRemisión: ${resultado.numeroRemision}\nProductos procesados: ${resultado.productosProcesados}\nMovimientos generados: ${resultado.movimientosGenerados}`);
+
+                // Cerrar modal y actualizar
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalSalidaAverias'));
+                modal.hide();
+
+                cargarTodosMovimientos();
+                actualizarEstadisticas();
+
+            } else {
+                // Error
+                alert(`❌ ${resultado.message}`);
+                document.getElementById('btnProcesarSalidaAverias').innerHTML = '<i class="fas fa-truck me-1"></i>Procesar Devolución';
+                document.getElementById('btnProcesarSalidaAverias').disabled = false;
+            }
+
+        } catch (error) {
+            alert('❌ Error de conexión: ' + error.message);
+            document.getElementById('btnProcesarSalidaAverias').innerHTML = '<i class="fas fa-truck me-1"></i>Procesar Devolución';
+            document.getElementById('btnProcesarSalidaAverias').disabled = false;
+        }
+    }
+
+    // ==============================================
+    // FUNCIONES EXISTENTES PARA AVERÍAS (MANTENIDAS)
+    // ==============================================
+
+    // Abrir modal de avería
+    function abrirModalAveria() {
+        // Resetear el modal
+        referenciaValidaAveria = false;
+        productoInfoAveria = null;
+
+        document.getElementById('averiaProductoReferencia').value = '';
+        document.getElementById('averiaCantidad').value = '1';
+        document.getElementById('averiaTipo').value = '';
+        document.getElementById('averiaRemision').value = '';
+        document.getElementById('averiaFecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('averiaUsuario').value = 'SISTEMA';
+        document.getElementById('averiaObservaciones').value = '';
+
+        document.getElementById('averiaProductoReferencia').classList.remove('referencia-valida', 'referencia-invalida');
+        document.getElementById('mensajeValidacionAveria').textContent = '';
+        document.getElementById('infoProductoAveria').style.display = 'none';
+        document.getElementById('btnRegistrarAveria').disabled = true;
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalAveria'));
+        modal.show();
+    }
+
+    // Validar referencia para avería
+    async function validarReferenciaAveria() {
+        const referencia = document.getElementById('averiaProductoReferencia').value.trim();
+        const inputReferencia = document.getElementById('averiaProductoReferencia');
+        const mensajeValidacion = document.getElementById('mensajeValidacionAveria');
+        const btnRegistrar = document.getElementById('btnRegistrarAveria');
+        const infoProducto = document.getElementById('infoProductoAveria');
+
+        if (!referencia) {
+            inputReferencia.classList.remove('referencia-valida', 'referencia-invalida');
+            mensajeValidacion.textContent = '';
+            infoProducto.style.display = 'none';
+            btnRegistrar.disabled = true;
+            referenciaValidaAveria = false;
+            return;
+        }
+
+        try {
+            // Validar que la referencia existe
+            const response = await fetch(`/api/movimientos/validar-referencia/${referencia}`);
+            const resultado = await response.json();
+
+            if (resultado.existe) {
+                // Obtener información completa del producto
+                const productoResponse = await fetch(`/api/productos/referencia/${referencia}`);
+                if (productoResponse.ok) {
+                    productoInfoAveria = await productoResponse.json();
+
+                    // Mostrar información del producto
+                    document.getElementById('infoProductoNombre').textContent = productoInfoAveria.nombre || '-';
+                    document.getElementById('infoProductoCategoria').textContent = productoInfoAveria.categoria || '-';
+                    document.getElementById('infoProductoStock').textContent = productoInfoAveria.cantidadStock || '0';
+                    document.getElementById('infoProductoProveedor').textContent = productoInfoAveria.proveedor || '-';
+                    infoProducto.style.display = 'block';
+                }
+
+                inputReferencia.classList.remove('referencia-invalida');
+                inputReferencia.classList.add('referencia-valida');
+                mensajeValidacion.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i> Referencia válida';
+                referenciaValidaAveria = true;
+
+                // Habilitar botón si todos los campos requeridos están llenos
+                validarFormularioAveria();
+
+            } else {
+                inputReferencia.classList.remove('referencia-valida');
+                inputReferencia.classList.add('referencia-invalida');
+                mensajeValidacion.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-1"></i> Referencia no encontrada';
+                infoProducto.style.display = 'none';
+                btnRegistrar.disabled = true;
+                referenciaValidaAveria = false;
+            }
+        } catch (error) {
+            inputReferencia.classList.remove('referencia-valida');
+            inputReferencia.classList.add('referencia-invalida');
+            mensajeValidacion.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-1"></i> Error validando referencia';
+            infoProducto.style.display = 'none';
+            btnRegistrar.disabled = true;
+            referenciaValidaAveria = false;
+        }
+    }
+
+    // Validar formulario completo de avería
+    function validarFormularioAveria() {
+        const tipoAveria = document.getElementById('averiaTipo').value;
+        const cantidad = document.getElementById('averiaCantidad').value;
+        const observaciones = document.getElementById('averiaObservaciones').value.trim();
+        const fecha = document.getElementById('averiaFecha').value;
+
+        const btnRegistrar = document.getElementById('btnRegistrarAveria');
+
+        const formularioValido = referenciaValidaAveria &&
+                               tipoAveria &&
+                               cantidad &&
+                               parseInt(cantidad) > 0 &&
+                               observaciones &&
+                               fecha;
+
+        btnRegistrar.disabled = !formularioValido;
+    }
+
+    // Registrar avería
+    async function registrarAveria() {
+        const productoReferencia = document.getElementById('averiaProductoReferencia').value.trim();
+        const cantidad = parseInt(document.getElementById('averiaCantidad').value);
+        const tipoAveria = document.getElementById('averiaTipo').value;
+        const numeroRemision = document.getElementById('averiaRemision').value.trim();
+        const fechaDeteccion = document.getElementById('averiaFecha').value;
+        const usuario = document.getElementById('averiaUsuario').value.trim() || 'SISTEMA';
+        const observaciones = document.getElementById('averiaObservaciones').value.trim();
+
+        // Validaciones finales
+        if (!referenciaValidaAveria) {
+            alert('La referencia del producto no es válida');
+            return;
+        }
+
+        if (!tipoAveria) {
+            alert('Debe seleccionar el tipo de avería');
+            return;
+        }
+
+        if (!cantidad || cantidad < 1) {
+            alert('La cantidad debe ser mayor a 0');
+            return;
+        }
+
+        if (!observaciones) {
+            alert('Las observaciones son requeridas');
+            return;
+        }
+
+        if (!fechaDeteccion) {
+            alert('La fecha de detección es requerida');
+            return;
+        }
+
+        // Validar stock disponible
+        if (productoInfoAveria && productoInfoAveria.cantidadStock < cantidad) {
+            alert(`❌ Stock insuficiente\n\nStock actual: ${productoInfoAveria.cantidadStock}\nAvería a registrar: ${cantidad}\n\nNo hay suficiente stock disponible para registrar esta avería.`);
+            return;
+        }
+
+        // Preparar datos
+        const datos = {
+            productoReferencia: productoReferencia,
+            cantidad: cantidad,
+            tipoAveria: tipoAveria,
+            numeroRemision: numeroRemision || null,
+            observaciones: observaciones,
+            usuario: usuario,
+            fechaDeteccion: fechaDeteccion + 'T00:00:00' // Formato ISO para LocalDateTime
+        };
+
+        try {
+            // Mostrar loading
+            document.getElementById('btnRegistrarAveria').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registrando...';
+            document.getElementById('btnRegistrarAveria').disabled = true;
+
+            const response = await fetch('/api/averias', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
             });
 
             if (response.ok) {
-                alert('✅ Salida registrada correctamente');
-                document.getElementById('formSalida').reset();
+                const averiaRegistrada = await response.json();
+
+                // Éxito
+                alert(`✅ Avería registrada correctamente\n\nProducto: ${productoReferencia}\nCantidad: ${cantidad}\nTipo: ${tipoAveria}\n\nEl stock se ha actualizado automáticamente.`);
+
+                // Cerrar modal y actualizar
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalAveria'));
+                modal.hide();
+
+                // Actualizar la vista
                 cargarTodosMovimientos();
+                actualizarEstadisticas();
+
             } else {
                 const error = await response.text();
-                alert('❌ Error: ' + error);
+                alert(`❌ Error registrando avería: ${error}`);
+                document.getElementById('btnRegistrarAveria').innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Registrar Avería';
+                document.getElementById('btnRegistrarAveria').disabled = false;
             }
+
         } catch (error) {
-            alert('❌ Error de conexión: ' + error);
+            alert('❌ Error de conexión: ' + error.message);
+            document.getElementById('btnRegistrarAveria').innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Registrar Avería';
+            document.getElementById('btnRegistrarAveria').disabled = false;
         }
     }
+
+    // ==============================================
+    // FUNCIONES EXISTENTES PARA ENTRADA MANUAL
+    // ==============================================
+
+    // Abrir modal de entrada manual
+    function abrirModalEntradaManual() {
+        // Resetear el modal
+        productosEntrada = [];
+        referenciaValidaEntrada = false;
+        document.getElementById('numeroRemisionEntrada').value = '';
+        document.getElementById('origenIngenioEntrada').value = '';
+        document.getElementById('placaVehiculoEntrada').value = '';
+        document.getElementById('fechaEntrada').value = new Date().toISOString().split('T')[0];
+        document.getElementById('observacionesEntrada').value = '';
+        document.getElementById('nuevaReferenciaEntrada').value = '';
+        document.getElementById('nuevaCantidadEntrada').value = '1';
+        document.getElementById('nuevaReferenciaEntrada').classList.remove('referencia-valida', 'referencia-invalida');
+        document.getElementById('mensajeValidacionEntrada').textContent = '';
+        document.getElementById('btnAgregarProductoEntrada').disabled = true;
+        document.getElementById('btnProcesarEntrada').disabled = true;
+
+        actualizarTablaProductosEntrada();
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalEntradaManual'));
+        modal.show();
+    }
+
+    // Validar referencia en tiempo real para entrada
+    async function validarReferenciaEntrada() {
+        const referencia = document.getElementById('nuevaReferenciaEntrada').value.trim();
+        const inputReferencia = document.getElementById('nuevaReferenciaEntrada');
+        const mensajeValidacion = document.getElementById('mensajeValidacionEntrada');
+        const btnAgregar = document.getElementById('btnAgregarProductoEntrada');
+
+        if (!referencia) {
+            inputReferencia.classList.remove('referencia-valida', 'referencia-invalida');
+            mensajeValidacion.textContent = '';
+            btnAgregar.disabled = true;
+            referenciaValidaEntrada = false;
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/movimientos/validar-referencia/${referencia}`);
+            const resultado = await response.json();
+
+            if (resultado.existe) {
+                inputReferencia.classList.remove('referencia-invalida');
+                inputReferencia.classList.add('referencia-valida');
+                mensajeValidacion.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i> Referencia válida';
+                btnAgregar.disabled = false;
+                referenciaValidaEntrada = true;
+            } else {
+                inputReferencia.classList.remove('referencia-valida');
+                inputReferencia.classList.add('referencia-invalida');
+                mensajeValidacion.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-1"></i> Referencia no encontrada';
+                btnAgregar.disabled = true;
+                referenciaValidaEntrada = false;
+            }
+        } catch (error) {
+            inputReferencia.classList.remove('referencia-valida');
+            inputReferencia.classList.add('referencia-invalida');
+            mensajeValidacion.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-1"></i> Error validando referencia';
+            btnAgregar.disabled = true;
+            referenciaValidaEntrada = false;
+        }
+    }
+
+    // Agregar producto a la tabla de entrada
+    function agregarProductoEntrada() {
+        const referencia = document.getElementById('nuevaReferenciaEntrada').value.trim();
+        const cantidad = parseInt(document.getElementById('nuevaCantidadEntrada').value);
+
+        if (!referencia || !cantidad || cantidad < 1) {
+            alert('Por favor ingresa una referencia válida y cantidad mayor a 0');
+            return;
+        }
+
+        if (!referenciaValidaEntrada) {
+            alert('La referencia no es válida. Por favor valida primero la referencia.');
+            return;
+        }
+
+        // Verificar si la referencia ya existe en la lista
+        const productoExistente = productosEntrada.find(p => p.referencia === referencia);
+        if (productoExistente) {
+            if (confirm(`La referencia ${referencia} ya está en la lista. ¿Deseas sumar las cantidades?`)) {
+                productoExistente.cantidad += cantidad;
+            } else {
+                return;
+            }
+        } else {
+            // Agregar nuevo producto
+            productosEntrada.push({
+                referencia: referencia,
+                cantidad: cantidad
+            });
+        }
+
+        // Limpiar campos
+        document.getElementById('nuevaReferenciaEntrada').value = '';
+        document.getElementById('nuevaCantidadEntrada').value = '1';
+        document.getElementById('nuevaReferenciaEntrada').classList.remove('referencia-valida', 'referencia-invalida');
+        document.getElementById('mensajeValidacionEntrada').textContent = '';
+        document.getElementById('btnAgregarProductoEntrada').disabled = true;
+        referenciaValidaEntrada = false;
+
+        actualizarTablaProductosEntrada();
+    }
+
+    // Actualizar tabla de productos de entrada
+    function actualizarTablaProductosEntrada() {
+        const cuerpoTabla = document.getElementById('cuerpoTablaProductosEntrada');
+        const mensajeVacio = document.getElementById('mensajeTablaVaciaEntrada');
+        const contador = document.getElementById('contadorProductosEntrada');
+        const btnProcesar = document.getElementById('btnProcesarEntrada');
+
+        // Actualizar contador
+        contador.textContent = `${productosEntrada.length} producto${productosEntrada.length !== 1 ? 's' : ''}`;
+
+        // Habilitar/deshabilitar botón de procesar
+        btnProcesar.disabled = productosEntrada.length === 0;
+
+        if (productosEntrada.length === 0) {
+            cuerpoTabla.innerHTML = '';
+            mensajeVacio.style.display = 'block';
+            return;
+        }
+
+        mensajeVacio.style.display = 'none';
+
+        let html = '';
+        productosEntrada.forEach((producto, index) => {
+            html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${producto.referencia}</strong></td>
+                <td>${producto.cantidad}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-warning me-1" onclick="editarProductoEntrada(${index})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarProductoEntrada(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            `;
+        });
+
+        cuerpoTabla.innerHTML = html;
+    }
+
+    // Editar producto de entrada
+    function editarProductoEntrada(index) {
+        const producto = productosEntrada[index];
+        const nuevaCantidad = prompt(`Editar cantidad para referencia ${producto.referencia}:`, producto.cantidad);
+
+        if (nuevaCantidad !== null && !isNaN(nuevaCantidad) && parseInt(nuevaCantidad) > 0) {
+            productosEntrada[index].cantidad = parseInt(nuevaCantidad);
+            actualizarTablaProductosEntrada();
+        }
+    }
+
+    // Eliminar producto de entrada
+    function eliminarProductoEntrada(index) {
+        if (confirm('¿Estás seguro de que deseas eliminar este producto de la lista?')) {
+            productosEntrada.splice(index, 1);
+            actualizarTablaProductosEntrada();
+        }
+    }
+
+    // Procesar entrada manual
+    async function procesarEntradaManual() {
+        const numeroRemision = document.getElementById('numeroRemisionEntrada').value.trim();
+        const origenIngenio = document.getElementById('origenIngenioEntrada').value;
+        const placaVehiculo = document.getElementById('placaVehiculoEntrada').value.trim();
+        const fechaEntrada = document.getElementById('fechaEntrada').value;
+        const observaciones = document.getElementById('observacionesEntrada').value.trim();
+
+        // Validaciones
+        if (!numeroRemision) {
+            alert('El número de remisión es requerido');
+            return;
+        }
+
+        if (!origenIngenio) {
+            alert('Debe seleccionar el origen del ingenio');
+            return;
+        }
+
+        if (!placaVehiculo) {
+            alert('La placa del vehículo es requerida');
+            return;
+        }
+
+        if (!fechaEntrada) {
+            alert('La fecha de entrada es requerida');
+            return;
+        }
+
+        if (productosEntrada.length === 0) {
+            alert('Debe agregar al menos un producto');
+            return;
+        }
+
+        // Preparar datos
+        const datos = {
+            numeroRemision: numeroRemision,
+            origenIngenio: origenIngenio,
+            placaVehiculo: placaVehiculo,
+            fechaEntrada: fechaEntrada,
+            observaciones: observaciones,
+            productos: productosEntrada.map(p => ({
+                referencia: p.referencia,
+                cantidad: p.cantidad
+            }))
+        };
+
+        try {
+            // Mostrar loading
+            document.getElementById('btnProcesarEntrada').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Procesando...';
+            document.getElementById('btnProcesarEntrada').disabled = true;
+
+            const response = await fetch('/api/movimientos/entrada-manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+
+            const resultado = await response.json();
+
+            if (resultado.success) {
+                // Éxito
+                alert(`✅ ${resultado.message}\n\nRemisión: ${resultado.numeroRemision}\nProductos procesados: ${resultado.productosProcesados}\nMovimientos generados: ${resultado.movimientosGenerados}`);
+
+                // Cerrar modal y actualizar
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEntradaManual'));
+                modal.hide();
+
+                cargarTodosMovimientos();
+                actualizarEstadisticas();
+
+            } else {
+                // Error
+                alert(`❌ ${resultado.message}`);
+                document.getElementById('btnProcesarEntrada').innerHTML = '<i class="fas fa-check me-1"></i>Procesar Entrada';
+                document.getElementById('btnProcesarEntrada').disabled = false;
+            }
+
+        } catch (error) {
+            alert('❌ Error de conexión: ' + error.message);
+            document.getElementById('btnProcesarEntrada').innerHTML = '<i class="fas fa-check me-1"></i>Procesar Entrada';
+            document.getElementById('btnProcesarEntrada').disabled = false;
+        }
+    }
+
+    // ==============================================
+    // FUNCIONES EXISTENTES PARA SALIDA MANUAL
+    // ==============================================
+
+    // Abrir modal de salida manual
+    function abrirModalSalidaManual() {
+        // Resetear el modal
+        productosSalida = [];
+        referenciaValidaSalida = false;
+        document.getElementById('numeroDocumentoSalida').value = '';
+        document.getElementById('destinoSalida').value = '';
+        document.getElementById('placaVehiculoSalida').value = '';
+        document.getElementById('fechaSalida').value = new Date().toISOString().split('T')[0];
+        document.getElementById('observacionesSalida').value = '';
+        document.getElementById('nuevaReferenciaSalida').value = '';
+        document.getElementById('nuevaCantidadSalida').value = '1';
+        document.getElementById('nuevaPesoSalida').value = '0';
+        document.getElementById('nuevaReferenciaSalida').classList.remove('referencia-valida', 'referencia-invalida');
+        document.getElementById('mensajeValidacionSalida').textContent = '';
+        document.getElementById('btnAgregarProductoSalida').disabled = true;
+        document.getElementById('btnProcesarSalida').disabled = true;
+
+        actualizarTablaProductosSalida();
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalSalidaManual'));
+        modal.show();
+    }
+
+    // Validar referencia en tiempo real para salida
+    async function validarReferenciaSalida() {
+        const referencia = document.getElementById('nuevaReferenciaSalida').value.trim();
+        const inputReferencia = document.getElementById('nuevaReferenciaSalida');
+        const mensajeValidacion = document.getElementById('mensajeValidacionSalida');
+        const btnAgregar = document.getElementById('btnAgregarProductoSalida');
+
+        if (!referencia) {
+            inputReferencia.classList.remove('referencia-valida', 'referencia-invalida');
+            mensajeValidacion.textContent = '';
+            btnAgregar.disabled = true;
+            referenciaValidaSalida = false;
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/movimientos/validar-referencia/${referencia}`);
+            const resultado = await response.json();
+
+            if (resultado.existe) {
+                inputReferencia.classList.remove('referencia-invalida');
+                inputReferencia.classList.add('referencia-valida');
+                mensajeValidacion.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i> Referencia válida';
+                btnAgregar.disabled = false;
+                referenciaValidaSalida = true;
+            } else {
+                inputReferencia.classList.remove('referencia-valida');
+                inputReferencia.classList.add('referencia-invalida');
+                mensajeValidacion.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-1"></i> Referencia no encontrada';
+                btnAgregar.disabled = true;
+                referenciaValidaSalida = false;
+            }
+        } catch (error) {
+            inputReferencia.classList.remove('referencia-valida');
+            inputReferencia.classList.add('referencia-invalida');
+            mensajeValidacion.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-1"></i> Error validando referencia';
+            btnAgregar.disabled = true;
+            referenciaValidaSalida = false;
+        }
+    }
+
+    // Agregar producto a la tabla de salida
+    function agregarProductoSalida() {
+        const referencia = document.getElementById('nuevaReferenciaSalida').value.trim();
+        const cantidad = parseInt(document.getElementById('nuevaCantidadSalida').value);
+        const peso = parseFloat(document.getElementById('nuevaPesoSalida').value);
+
+        if (!referencia || !cantidad || cantidad < 1) {
+            alert('Por favor ingresa una referencia válida y cantidad mayor a 0');
+            return;
+        }
+
+        if (!referenciaValidaSalida) {
+            alert('La referencia no es válida. Por favor valida primero la referencia.');
+            return;
+        }
+
+        // Verificar si la referencia ya existe en la lista
+        const productoExistente = productosSalida.find(p => p.referencia === referencia);
+        if (productoExistente) {
+            if (confirm(`La referencia ${referencia} ya está en la lista. ¿Deseas sumar las cantidades?`)) {
+                productoExistente.cantidad += cantidad;
+                productoExistente.peso += peso;
+            } else {
+                return;
+            }
+        } else {
+            // Agregar nuevo producto
+            productosSalida.push({
+                referencia: referencia,
+                cantidad: cantidad,
+                peso: peso
+            });
+        }
+
+        // Limpiar campos
+        document.getElementById('nuevaReferenciaSalida').value = '';
+        document.getElementById('nuevaCantidadSalida').value = '1';
+        document.getElementById('nuevaPesoSalida').value = '0';
+        document.getElementById('nuevaReferenciaSalida').classList.remove('referencia-valida', 'referencia-invalida');
+        document.getElementById('mensajeValidacionSalida').textContent = '';
+        document.getElementById('btnAgregarProductoSalida').disabled = true;
+        referenciaValidaSalida = false;
+
+        actualizarTablaProductosSalida();
+    }
+
+    // Actualizar tabla de productos de salida
+    function actualizarTablaProductosSalida() {
+        const cuerpoTabla = document.getElementById('cuerpoTablaProductosSalida');
+        const mensajeVacio = document.getElementById('mensajeTablaVaciaSalida');
+        const contador = document.getElementById('contadorProductosSalida');
+        const btnProcesar = document.getElementById('btnProcesarSalida');
+
+        // Actualizar contador
+        contador.textContent = `${productosSalida.length} producto${productosSalida.length !== 1 ? 's' : ''}`;
+
+        // Habilitar/deshabilitar botón de procesar
+        btnProcesar.disabled = productosSalida.length === 0;
+
+        if (productosSalida.length === 0) {
+            cuerpoTabla.innerHTML = '';
+            mensajeVacio.style.display = 'block';
+            return;
+        }
+
+        mensajeVacio.style.display = 'none';
+
+        let html = '';
+        productosSalida.forEach((producto, index) => {
+            html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${producto.referencia}</strong></td>
+                <td>${producto.cantidad}</td>
+                <td>${producto.peso} kg</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-warning me-1" onclick="editarProductoSalida(${index})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarProductoSalida(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            `;
+        });
+
+        cuerpoTabla.innerHTML = html;
+    }
+
+    // Editar producto de salida
+    function editarProductoSalida(index) {
+        const producto = productosSalida[index];
+        const nuevaCantidad = prompt(`Editar cantidad para referencia ${producto.referencia}:`, producto.cantidad);
+        const nuevoPeso = prompt(`Editar peso (kg) para referencia ${producto.referencia}:`, producto.peso);
+
+        if (nuevaCantidad !== null && !isNaN(nuevaCantidad) && parseInt(nuevaCantidad) > 0) {
+            productosSalida[index].cantidad = parseInt(nuevaCantidad);
+        }
+
+        if (nuevoPeso !== null && !isNaN(nuevoPeso)) {
+            productosSalida[index].peso = parseFloat(nuevoPeso);
+        }
+
+        actualizarTablaProductosSalida();
+    }
+
+    // Eliminar producto de salida
+    function eliminarProductoSalida(index) {
+        if (confirm('¿Estás seguro de que deseas eliminar este producto de la lista?')) {
+            productosSalida.splice(index, 1);
+            actualizarTablaProductosSalida();
+        }
+    }
+
+    // Procesar salida manual
+    async function procesarSalidaManual() {
+        const numeroDocumento = document.getElementById('numeroDocumentoSalida').value.trim();
+        const destino = document.getElementById('destinoSalida').value.trim();
+        const placaVehiculo = document.getElementById('placaVehiculoSalida').value.trim();
+        const fechaSalida = document.getElementById('fechaSalida').value;
+        const observaciones = document.getElementById('observacionesSalida').value.trim();
+
+        // Validaciones
+        if (!numeroDocumento) {
+            alert('El número de documento es requerido');
+            return;
+        }
+
+        if (!destino) {
+            alert('El destino es requerido');
+            return;
+        }
+
+        if (!fechaSalida) {
+            alert('La fecha de salida es requerida');
+            return;
+        }
+
+        if (productosSalida.length === 0) {
+            alert('Debe agregar al menos un producto');
+            return;
+        }
+
+        // Preparar datos para salida manual
+        const datos = {
+            numeroDocumento: numeroDocumento,
+            destino: destino,
+            placaVehiculo: placaVehiculo,
+            fechaSalida: fechaSalida,
+            observaciones: observaciones,
+            productos: productosSalida.map(p => ({
+                referencia: p.referencia,
+                cantidad: p.cantidad,
+                peso: p.peso || 0
+            }))
+        };
+
+        try {
+            // Mostrar loading
+            document.getElementById('btnProcesarSalida').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Procesando...';
+            document.getElementById('btnProcesarSalida').disabled = true;
+
+            // Usar el nuevo endpoint de salida manual
+            const response = await fetch('/api/movimientos/salida-manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+
+            const resultado = await response.json();
+
+            if (resultado.success) {
+                // Éxito
+                alert(`✅ ${resultado.message}\n\nDocumento: ${resultado.numeroRemision}\nProductos procesados: ${resultado.productosProcesados}\nMovimientos generados: ${resultado.movimientosGenerados}`);
+
+                // Cerrar modal y actualizar
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalSalidaManual'));
+                modal.hide();
+
+                cargarTodosMovimientos();
+                actualizarEstadisticas();
+
+            } else {
+                // Error
+                alert(`❌ ${resultado.message}`);
+                document.getElementById('btnProcesarSalida').innerHTML = '<i class="fas fa-check me-1"></i>Procesar Salida';
+                document.getElementById('btnProcesarSalida').disabled = false;
+            }
+
+        } catch (error) {
+            alert('❌ Error de conexión: ' + error.message);
+            document.getElementById('btnProcesarSalida').innerHTML = '<i class="fas fa-check me-1"></i>Procesar Salida';
+            document.getElementById('btnProcesarSalida').disabled = false;
+        }
+    }
+
+    // ==============================================
+    // FUNCIONES EXISTENTES PARA BÚSQUEDA Y FILTROS
+    // ==============================================
+
+    // MEJORAS: BÚSQUEDA AVANZADA
+    function inicializarBusquedaAvanzada() {
+        const searchInput = document.getElementById('searchReferencia');
+        let timeoutId;
+
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(timeoutId);
+            const valor = e.target.value.trim();
+
+            if (valor.length < 2) {
+                ocultarSugerencias();
+                return;
+            }
+
+            timeoutId = setTimeout(() => {
+                buscarSugerencias(valor);
+            }, 300);
+        });
+
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                buscarPorReferencia();
+            }
+        });
+
+        // Ocultar sugerencias al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#searchReferencia') && !e.target.closest('#sugerenciasBusqueda')) {
+                ocultarSugerencias();
+            }
+        });
+    }
+
+    async function buscarSugerencias(referencia) {
+        try {
+            // Simular búsqueda de sugerencias
+            const response = await fetch(`/api/productos/buscar?q=${encodeURIComponent(referencia)}`);
+            const sugerencias = await response.json();
+            mostrarSugerencias(sugerencias);
+        } catch (error) {
+            console.error('Error buscando sugerencias:', error);
+            // Fallback: buscar en movimientos existentes
+            const movimientos = await fetch('/api/movimientos').then(r => r.json());
+            const referenciasUnicas = [...new Set(movimientos.map(m => m.producto?.referencia).filter(Boolean))];
+            const sugerencias = referenciasUnicas.filter(ref =>
+                ref.toLowerCase().includes(referencia.toLowerCase())
+            ).slice(0, 5).map(ref => ({ referencia: ref, nombre: `Producto ${ref}` }));
+
+            mostrarSugerencias(sugerencias);
+        }
+    }
+
+    function mostrarSugerencias(sugerencias) {
+        const contenedor = document.getElementById('sugerenciasBusqueda');
+        if (sugerencias.length === 0) {
+            ocultarSugerencias();
+            return;
+        }
+
+        const html = sugerencias.map(producto =>
+            `<div class="search-suggestion-item" onclick="seleccionarSugerencia('${producto.referencia}')">
+                <strong>${producto.referencia}</strong> - ${producto.nombre}
+                <small class="text-muted d-block">Stock: ${producto.cantidadStock || 'N/A'}</small>
+            </div>`
+        ).join('');
+
+        contenedor.innerHTML = html;
+        contenedor.classList.remove('d-none');
+    }
+
+    function seleccionarSugerencia(referencia) {
+        document.getElementById('searchReferencia').value = referencia;
+        ocultarSugerencias();
+        buscarPorReferencia();
+    }
+
+    function ocultarSugerencias() {
+        const contenedor = document.getElementById('sugerenciasBusqueda');
+        contenedor.classList.add('d-none');
+    }
+
+    // MEJORAS: FILTROS FECHA AVANZADOS
+    function aplicarRangoPredefinido(rango) {
+        const hoy = new Date();
+        let inicio, fin;
+
+        switch(rango) {
+            case 'Hoy':
+                inicio = fin = hoy.toISOString().split('T')[0];
+                break;
+            case 'Ayer':
+                const ayer = new Date(hoy);
+                ayer.setDate(hoy.getDate() - 1);
+                inicio = fin = ayer.toISOString().split('T')[0];
+                break;
+            case 'UltimaSemana':
+                inicio = new Date(hoy.setDate(hoy.getDate()-7)).toISOString().split('T')[0];
+                fin = new Date().toISOString().split('T')[0];
+                break;
+            case 'EsteMes':
+                inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+                fin = new Date().toISOString().split('T')[0];
+                break;
+        }
+
+        document.getElementById('fechaInicio').value = inicio;
+        document.getElementById('fechaFin').value = fin;
+        filtrarPorFecha();
+    }
+
+    // ==============================================
+    // FUNCIONES EXISTENTES PARA CARGA DE MOVIMIENTOS
+    // ==============================================
+
+    async function cargarTodosMovimientos() {
+        try {
+            actualizarBotonActivo('btnTodos');
+            document.getElementById('movimientosList').innerHTML = `
+                <div class="text-center text-muted py-2">
+                    <i class="fas fa-sync fa-spin me-2"></i>Cargando todos los movimientos...
+                </div>
+            `;
+
+            const response = await fetch('/api/movimientos');
+            if (!response.ok) {
+                throw new Error('Error al cargar movimientos: ' + response.status);
+            }
+
+            const movimientos = await response.json();
+            console.log('Movimientos cargados:', movimientos);
+
+            if (movimientos.length === 0) {
+                mostrarMovimientosIndividuales([]);
+            } else {
+                // Separar movimientos con documento y sin documento
+                const movimientosConDocumento = movimientos.filter(m => m.documentoCompra);
+                const movimientosManuales = movimientos.filter(m => !m.documentoCompra);
+
+                if (movimientosConDocumento.length > 0) {
+                    // Agrupar por documento compra
+                    const documentosUnicos = [...new Set(movimientosConDocumento.map(m => m.documentoCompra.id))];
+                    const documentosAgrupados = documentosUnicos.map(id => {
+                        const movsDelDocumento = movimientosConDocumento.filter(m => m.documentoCompra.id === id);
+                        return {
+                            documento: movsDelDocumento[0].documentoCompra,
+                            movimientos: movsDelDocumento
+                        };
+                    });
+                    mostrarDocumentosAgrupados(documentosAgrupados);
+                } else {
+                    mostrarMovimientosIndividuales(movimientosManuales);
+                }
+            }
+
+            actualizarEstadisticas();
+
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('movimientosList').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error cargando movimientos: ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    async function cargarMovimientosManuales() {
+        try {
+            actualizarBotonActivo('btnManuales');
+            document.getElementById('movimientosList').innerHTML = `
+                <div class="text-center text-muted py-2">
+                    <i class="fas fa-sync fa-spin me-2"></i>Cargando movimientos manuales...
+                </div>
+            `;
+
+            const response = await fetch('/api/movimientos/manuales');
+            const movimientos = await response.json();
+            mostrarMovimientosIndividuales(movimientos);
+            actualizarEstadisticas();
+
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    async function cargarDocumentosCompra() {
+        try {
+            actualizarBotonActivo('btnDocumentos');
+            document.getElementById('movimientosList').innerHTML = `
+                <div class="text-center text-muted py-2">
+                    <i class="fas fa-sync fa-spin me-2"></i>Cargando documentos...
+                </div>
+            `;
+
+            const response = await fetch('/api/documentos-compra');
+            const documentos = await response.json();
+            mostrarDocumentosAgrupados(documentos.map(doc => ({
+                documento: doc,
+                movimientos: doc.movimientos || []
+            })));
+            actualizarEstadisticas();
+
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function mostrarMovimientosIndividuales(movimientos) {
+        const movimientosList = document.getElementById('movimientosList');
+        movimientosList.innerHTML = '';
+
+        if (movimientos.length === 0) {
+            movimientosList.innerHTML = `
+                <div class="text-center text-muted p-4">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>No hay movimientos registrados</p>
+                </div>
+            `;
+            return;
+        }
+
+        movimientos.forEach(mov => {
+            const tipoClass = mov.tipoMovimiento === 'ENTRADA' ? 'entrada' :
+                mov.tipoMovimiento === 'SALIDA' ? 'salida' : 'ajuste';
+
+            const tipoIcon = mov.tipoMovimiento === 'ENTRADA' ? 'fa-arrow-down text-success' :
+                mov.tipoMovimiento === 'SALIDA' ? 'fa-arrow-up text-danger' : 'fa-balance-scale text-warning';
+
+            const productoNombre = mov.producto ? mov.producto.nombre : 'Producto no disponible';
+            const productoReferencia = mov.producto ? mov.producto.referencia : 'N/A';
+
+            const movimientoHTML = `
+            <div class="card movimiento-card ${tipoClass}">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas ${tipoIcon} me-2"></i>
+                                <strong>${mov.tipoMovimiento}</strong>
+                                <small class="text-muted ms-2">${productoNombre}</small>
+                            </div>
+                            <small class="text-muted">Ref: ${productoReferencia}</small>
+                            <div class="mt-2">
+                                <span class="badge bg-secondary">Cantidad: ${mov.cantidad}</span>
+                                <span class="badge bg-info">Stock: ${mov.stockAnterior} → ${mov.stockNuevo}</span>
+                                <span class="badge bg-dark">${mov.motivo}</span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">${new Date(mov.fechaMovimiento).toLocaleString()}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+            movimientosList.innerHTML += movimientoHTML;
+        });
+    }
+
+    function mostrarDocumentosAgrupados(documentosAgrupados) {
+        const movimientosList = document.getElementById('movimientosList');
+        movimientosList.innerHTML = '';
+
+        if (documentosAgrupados.length === 0) {
+            movimientosList.innerHTML = `
+                <div class="text-center text-muted p-4">
+                    <i class="fas fa-file-invoice fa-3x mb-3"></i>
+                    <p>No hay documentos de compra registrados</p>
+                </div>
+            `;
+            return;
+        }
+
+        documentosAgrupados.forEach(({ documento, movimientos }) => {
+            const clienteNombre = documento.cliente ? documento.cliente.nombre : documento.clienteNombre;
+            const conductorNombre = documento.conductor ? documento.conductor.nombre : 'N/A';
+            const transportadora = documento.conductor ? documento.conductor.empresaTransporte : documento.transportadora;
+
+            // Determinar tipo de documento (ENTRADA o SALIDA)
+            const esEntrada = documento.numeroFactura && documento.numeroFactura.startsWith('ENTRADA_');
+            const badgeTipo = esEntrada ? '<span class="badge badge-entrada">ENTRADA</span>' : '<span class="badge badge-salida">SALIDA</span>';
+
+            const documentoHTML = `
+            <div class="card documento-card">
+                <div class="card-header ${esEntrada ? 'bg-success' : 'bg-primary'} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="fas fa-file-invoice me-2"></i>${clienteNombre}</strong>
+                            <br>
+                            <small>${esEntrada ? 'Remisión' : 'Factura'}: ${esEntrada ? documento.numeroRemision : documento.numeroFactura} ${esEntrada ? '' : '| Remisión: ' + documento.numeroRemision}</small>
+                        </div>
+                        <div>
+                            <button class="btn btn-light btn-sm me-2" onclick="verDetalleDocumento(${documento.id})">
+                                <i class="fas fa-eye me-1"></i>Ver Detalles
+                            </button>
+                            ${badgeTipo}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small><strong>Fecha:</strong> ${new Date(documento.fechaFacturacion).toLocaleDateString()}</small><br>
+                            <small><strong>Peso Total:</strong> ${documento.pesoTotal || 'N/A'} kg</small><br>
+                            <small><strong>Valor Total:</strong> $${documento.valorTotal?.toLocaleString() || 'N/A'}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <small><strong>Transportador:</strong> ${transportadora || 'N/A'}</small><br>
+                            <small><strong>Conductor:</strong> ${conductorNombre || 'N/A'}</small><br>
+                            <small><strong>Placa:</strong> ${documento.placaVehiculo || 'N/A'}</small>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-success">${movimientos.length} Productos</span>
+                    </div>
+                </div>
+            </div>
+            `;
+            movimientosList.innerHTML += documentoHTML;
+        });
+    }
+
+    async function verDetalleDocumento(documentoId) {
+        try {
+            const response = await fetch(`/api/documentos-compra/${documentoId}/movimientos`);
+            const movimientos = await response.json();
+
+            let detallesHTML = `<h6><i class="fas fa-boxes me-2"></i>Productos incluidos:</h6>`;
+
+            if (movimientos.length === 0) {
+                detallesHTML += `<p class="text-muted">No hay movimientos registrados para este documento.</p>`;
+            } else {
+                movimientos.forEach((mov, index) => {
+                    const productoNombre = mov.producto ? mov.producto.nombre : 'Producto no disponible';
+                    detallesHTML += `
+                    <div class="producto-item">
+                        <strong>${index + 1}. ${productoNombre}</strong><br>
+                        <small>Ref: ${mov.producto.referencia} | Cantidad: ${mov.cantidad} | Stock: ${mov.stockAnterior} → ${mov.stockNuevo}</small>
+                    </div>
+                    `;
+                });
+            }
+
+            document.getElementById('documentoModalBody').innerHTML = detallesHTML;
+            new bootstrap.Modal(document.getElementById('documentoModal')).show();
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('documentoModalBody').innerHTML = `
+                <div class="alert alert-danger">
+                    Error cargando detalles: ${error.message}
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('documentoModal')).show();
+        }
+    }
+
+    async function buscarPorReferencia() {
+        const referencia = document.getElementById('searchReferencia').value.trim();
+
+        if (!referencia) {
+            alert('Por favor ingresa una referencia para buscar');
+            return;
+        }
+
+        try {
+            document.getElementById('movimientosList').innerHTML = `
+                <div class="text-center text-muted py-2">
+                    <i class="fas fa-search fa-spin me-2"></i>Buscando referencia: ${referencia}...
+                </div>
+            `;
+
+            const response = await fetch(`/api/movimientos/producto/${referencia}`);
+            if (!response.ok) {
+                throw new Error('Referencia no encontrada');
+            }
+
+            const movimientos = await response.json();
+            mostrarMovimientosIndividuales(movimientos);
+
+        } catch (error) {
+            document.getElementById('movimientosList').innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No se encontraron movimientos para la referencia: ${referencia}
+                </div>
+            `;
+        }
+    }
+
+    function limpiarBusqueda() {
+        document.getElementById('searchReferencia').value = '';
+        ocultarSugerencias();
+        cargarTodosMovimientos();
+    }
+
+    async function filtrarPorFecha() {
+        const fechaInicio = document.getElementById('fechaInicio').value;
+        const fechaFin = document.getElementById('fechaFin').value;
+
+        if (!fechaInicio || !fechaFin) {
+            alert('Por favor selecciona ambas fechas');
+            return;
+        }
+
+        try {
+            document.getElementById('movimientosList').innerHTML = `
+                <div class="text-center text-muted py-2">
+                    <i class="fas fa-filter fa-spin me-2"></i>Filtrando de ${fechaInicio} a ${fechaFin}...
+                </div>
+            `;
+
+            const response = await fetch(`/api/documentos-compra/por-fecha?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
+            const documentos = await response.json();
+
+            if (documentos.length === 0) {
+                document.getElementById('movimientosList').innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No hay documentos en el rango de fechas seleccionado
+                    </div>
+                `;
+            } else {
+                mostrarDocumentosAgrupados(documentos.map(doc => ({
+                    documento: doc,
+                    movimientos: doc.movimientos || []
+                })));
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('movimientosList').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error aplicando filtro: ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    function limpiarFiltrosFecha() {
+        document.getElementById('fechaInicio').value = '';
+        document.getElementById('fechaFin').value = '';
+        cargarTodosMovimientos();
+    }
+
+    // ==============================================
+    // FUNCIONES EXISTENTES PARA AJUSTE MANUAL
+    // ==============================================
 
     // Función para registrar ajuste
     async function registrarAjuste() {
@@ -242,6 +2247,7 @@
                 alert('✅ Ajuste registrado correctamente');
                 document.getElementById('formAjuste').reset();
                 cargarTodosMovimientos();
+                actualizarEstadisticas();
             } else {
                 const error = await response.text();
                 alert('❌ Error: ' + error);
@@ -251,151 +2257,47 @@
         }
     }
 
-    // NUEVAS FUNCIONES PARA AGRUPAR MOVIMIENTOS
-    async function cargarTodosMovimientos() {
-        try {
-            const response = await fetch('/api/movimientos');
-            const movimientos = await response.json();
-            mostrarMovimientosIndividuales(movimientos);
-        } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('movimientosList').innerHTML = '<div class="alert alert-danger">Error cargando movimientos</div>';
-        }
-    }
+    // ==============================================
+    // FUNCIONES AUXILIARES
+    // ==============================================
 
-    async function cargarMovimientosManuales() {
-        try {
-            const response = await fetch('/api/movimientos/manuales');
-            const movimientos = await response.json();
-            mostrarMovimientosIndividuales(movimientos);
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
-
-    async function cargarDocumentosCompra() {
-        try {
-            const response = await fetch('/api/documentos-compra');
-            const documentos = await response.json();
-            mostrarDocumentosAgrupados(documentos);
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
-
-    function mostrarMovimientosIndividuales(movimientos) {
-        const movimientosList = document.getElementById('movimientosList');
-        movimientosList.innerHTML = '';
-
-        if (movimientos.length === 0) {
-            movimientosList.innerHTML = '<div class="text-center text-muted p-3">No hay movimientos registrados</div>';
-            return;
-        }
-
-        movimientos.forEach(mov => {
-            const tipoClass = mov.tipoMovimiento === 'ENTRADA' ? 'entrada' :
-                            mov.tipoMovimiento === 'SALIDA' ? 'salida' : 'ajuste';
-
-            const tipoIcon = mov.tipoMovimiento === 'ENTRADA' ? '📥' :
-                           mov.tipoMovimiento === 'SALIDA' ? '📤' : '⚖';
-
-            const movimientoHTML = `
-                <div class="card movimiento-card ${tipoClass}">
-                    <div class="card-body py-2">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <strong>${tipoIcon} ${mov.tipoMovimiento}</strong> -
-                                ${mov.producto.nombre}
-                                <br>
-                                <small class="text-muted">Ref: ${mov.producto.referencia}</small>
-                                <div class="mt-2">
-                                    <span class="badge bg-secondary">Cantidad: ${mov.cantidad}</span>
-                                    <span class="badge bg-info">Stock: ${mov.stockAnterior} → ${mov.stockNuevo}</span>
-                                    <span class="badge bg-dark">${mov.motivo}</span>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <small class="text-muted">${new Date(mov.fechaMovimiento).toLocaleString()}</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            movimientosList.innerHTML += movimientoHTML;
+    function actualizarBotonActivo(botonId) {
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            btn.classList.remove('active', 'filtro-activo');
+            btn.classList.add('btn-outline-primary', 'btn-outline-success', 'btn-outline-info');
         });
+
+        const botonActivo = document.getElementById(botonId);
+        botonActivo.classList.remove('btn-outline-primary', 'btn-outline-success', 'btn-outline-info');
+        botonActivo.classList.add('active', 'filtro-activo');
     }
 
-    function mostrarDocumentosAgrupados(documentos) {
-        const movimientosList = document.getElementById('movimientosList');
-        movimientosList.innerHTML = '';
-
-        if (documentos.length === 0) {
-            movimientosList.innerHTML = '<div class="text-center text-muted p-3">No hay documentos de compra registrados</div>';
-            return;
-        }
-
-        documentos.forEach(doc => {
-            const documentoHTML = `
-                <div class="card documento-card">
-                    <div class="card-header bg-primary text-white">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>📋 ${doc.cliente}</strong>
-                                <br>
-                                <small>Factura: ${doc.numeroFactura} | Remisión: ${doc.numeroRemision}</small>
-                            </div>
-                            <button class="btn btn-light btn-sm" onclick="verDetalleDocumento(${doc.id})">
-                                👁️ Ver Detalles
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <small><strong>Fecha:</strong> ${new Date(doc.fechaFacturacion).toLocaleDateString()}</small><br>
-                                <small><strong>Peso Total:</strong> ${doc.pesoTotal || 'N/A'} kg</small><br>
-                                <small><strong>Valor Total:</strong> $${doc.valorTotal?.toLocaleString() || 'N/A'}</small>
-                            </div>
-                            <div class="col-md-6">
-                                <small><strong>Transportador:</strong> ${doc.transportador || 'N/A'}</small><br>
-                                <small><strong>Conductor:</strong> ${doc.conductor || 'N/A'}</small><br>
-                                <small><strong>Placa:</strong> ${doc.placaVehiculo || 'N/A'}</small>
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <span class="badge bg-success">${doc.movimientos.length} Productos</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            movimientosList.innerHTML += documentoHTML;
-        });
-    }
-
-    async function verDetalleDocumento(documentoId) {
+    async function actualizarEstadisticas() {
         try {
-            const response = await fetch(`/api/documentos-compra/${documentoId}/movimientos`);
-            const movimientos = await response.json();
+            const responseMovimientos = await fetch('/api/movimientos');
+            const movimientos = await responseMovimientos.json();
 
-            let detallesHTML = '<h6>Productos incluidos:</h6>';
-            movimientos.forEach(mov => {
-                detallesHTML += `
-                    <div class="producto-item">
-                        <strong>${mov.producto.nombre}</strong><br>
-                        <small>Ref: ${mov.producto.referencia} | Cantidad: ${mov.cantidad} | Stock: ${mov.stockAnterior} → ${mov.stockNuevo}</small>
-                    </div>
-                `;
-            });
+            const responseDocumentos = await fetch('/api/documentos-compra');
+            const documentos = await responseDocumentos.json();
 
-            document.getElementById('documentoModalBody').innerHTML = detallesHTML;
-            new bootstrap.Modal(document.getElementById('documentoModal')).show();
+            const totalMovimientos = movimientos.length;
+            const totalDocumentos = documentos.length;
+            const totalManuales = movimientos.filter(m => !m.documentoCompra).length;
+
+            document.getElementById('totalMovimientos').textContent = totalMovimientos;
+            document.getElementById('totalDocumentos').textContent = totalDocumentos;
+            document.getElementById('totalManuales').textContent = totalManuales;
+            document.getElementById('ultimaActualizacion').textContent = new Date().toLocaleTimeString();
+
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error actualizando estadísticas:', error);
         }
     }
 
-    // Cargar todos los movimientos al iniciar
-    document.addEventListener('DOMContentLoaded', cargarTodosMovimientos);
+    // Función placeholder para exportar movimientos (ahora vacía)
+    function exportarMovimientos() {
+        // Función eliminada - ahora está solo en reportes
+    }
 </script>
 </body>
 </html>

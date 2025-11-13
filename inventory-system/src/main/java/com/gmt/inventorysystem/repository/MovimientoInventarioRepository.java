@@ -16,6 +16,7 @@ public interface MovimientoInventarioRepository extends JpaRepository<Movimiento
     List<MovimientoInventario> findByProductoReferenciaOrderByFechaMovimientoDesc(String productoReferencia);
 
     List<MovimientoInventario> findByTipoMovimientoOrderByFechaMovimientoDesc(String tipoMovimiento);
+
     List<MovimientoInventario> findAllByOrderByFechaMovimientoDesc();
 
     // NUEVOS MÉTODOS PARA TRABAJAR CON DOCUMENTOCOMPRA
@@ -29,15 +30,15 @@ public interface MovimientoInventarioRepository extends JpaRepository<Movimiento
     // Buscar movimientos sin documento compra (movimientos manuales)
     List<MovimientoInventario> findByDocumentoCompraIsNullOrderByFechaMovimientoDesc();
 
-    // Buscar todos los movimientos con documento compra cargado
-    @Query("SELECT m FROM MovimientoInventario m LEFT JOIN FETCH m.documentoCompra ORDER BY m.fechaMovimiento DESC")
-    List<MovimientoInventario> findAllWithDocumentoCompra();
+    // NUEVO MÉTODO MEJORADO: Buscar todos los movimientos con documento compra y producto cargados
+    @Query("SELECT m FROM MovimientoInventario m LEFT JOIN FETCH m.documentoCompra LEFT JOIN FETCH m.producto ORDER BY m.fechaMovimiento DESC")
+    List<MovimientoInventario> findAllWithDocumentoCompraAndProducto();
 
     // Buscar movimientos por documento compra con relaciones cargadas
-    @Query("SELECT m FROM MovimientoInventario m LEFT JOIN FETCH m.documentoCompra WHERE m.documentoCompra.id = :documentoCompraId ORDER BY m.fechaMovimiento DESC")
+    @Query("SELECT m FROM MovimientoInventario m LEFT JOIN FETCH m.documentoCompra LEFT JOIN FETCH m.producto WHERE m.documentoCompra.id = :documentoCompraId ORDER BY m.fechaMovimiento DESC")
     List<MovimientoInventario> findByDocumentoCompraIdWithDocumentoCompra(@Param("documentoCompraId") Long documentoCompraId);
 
     // Buscar movimiento específico con documento compra cargado
-    @Query("SELECT m FROM MovimientoInventario m LEFT JOIN FETCH m.documentoCompra WHERE m.id = :id")
+    @Query("SELECT m FROM MovimientoInventario m LEFT JOIN FETCH m.documentoCompra LEFT JOIN FETCH m.producto WHERE m.id = :id")
     Optional<MovimientoInventario> findByIdWithDocumentoCompra(@Param("id") Long id);
 }

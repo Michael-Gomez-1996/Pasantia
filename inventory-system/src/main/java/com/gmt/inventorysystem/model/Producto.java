@@ -12,7 +12,7 @@ public class Producto {
 
     @Id
     @Column(name = "referencia", unique = true, nullable = false, length = 50)
-    private String referencia;  // Ahora es el ID principal
+    private String referencia;
 
     @Column(nullable = false, length = 100)
     private String nombre;
@@ -24,22 +24,28 @@ public class Producto {
     private String descripcion;
 
     @Column(nullable = false, length = 20)
-    private String categoria;  // AZUCAR_BLANCA o AZUCAR_NATURAL
+    private String categoria;
 
     @Column(name = "cantidad_stock", nullable = false)
     private Integer cantidadStock = 0;
+
+    @Column(name = "cantidad_averiada", nullable = false)
+    private Integer cantidadAveriada = 0;
 
     @Column(name = "stock_minimo", nullable = false)
     private Integer stockMinimo = 50;
 
     @Column(name = "peso_por_paca", nullable = false)
-    private Double pesoPorPaca;  // Ejemplo: 25.0, 50.0 (kg)
+    private Double pesoPorPaca;
 
     @Column(name = "unidades_por_paca", nullable = false)
-    private Integer unidadesPorPaca;  // Ejemplo: 1 (cada paca es 1 unidad)
+    private Integer unidadesPorPaca;
+
+    @Column(name = "pacas_por_estiba", nullable = false)
+    private Integer pacasPorEstiba = 100;
 
     @Column(nullable = false, length = 50)
-    private String proveedor;  // ING_MAYAGUEZ o ING_SAN_CARLOS
+    private String proveedor;
 
     @Column(nullable = false, length = 20)
     private String ubicacion = "ESTIBA";
@@ -52,28 +58,28 @@ public class Producto {
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
 
-    // Constructor vacío (necesario para JPA)
     public Producto() {
     }
 
-    // Constructor con parámetros principales
     public Producto(String referencia, String nombre, String lote, String descripcion,
                     String categoria, Integer cantidadStock, Integer stockMinimo,
-                    Double pesoPorPaca, Integer unidadesPorPaca, String proveedor) {
+                    Double pesoPorPaca, Integer unidadesPorPaca, Integer pacasPorEstiba,
+                    String proveedor) {
         this.referencia = referencia;
         this.nombre = nombre;
         this.lote = lote;
         this.descripcion = descripcion;
         this.categoria = categoria;
         this.cantidadStock = cantidadStock;
+        this.cantidadAveriada = 0;
         this.stockMinimo = stockMinimo;
         this.pesoPorPaca = pesoPorPaca;
         this.unidadesPorPaca = unidadesPorPaca;
+        this.pacasPorEstiba = pacasPorEstiba;
         this.proveedor = proveedor;
         this.ubicacion = "ESTIBA";
     }
 
-    // Getters y Setters
     public String getReferencia() {
         return referencia;
     }
@@ -111,7 +117,6 @@ public class Producto {
     }
 
     public void setCategoria(String categoria) {
-        // Validación para asegurar que solo sean las categorías permitidas
         if (categoria != null &&
                 !categoria.equals("AZUCAR_BLANCA") &&
                 !categoria.equals("AZUCAR_NATURAL")) {
@@ -126,6 +131,14 @@ public class Producto {
 
     public void setCantidadStock(Integer cantidadStock) {
         this.cantidadStock = cantidadStock;
+    }
+
+    public Integer getCantidadAveriada() {
+        return cantidadAveriada;
+    }
+
+    public void setCantidadAveriada(Integer cantidadAveriada) {
+        this.cantidadAveriada = cantidadAveriada;
     }
 
     public Integer getStockMinimo() {
@@ -152,12 +165,19 @@ public class Producto {
         this.unidadesPorPaca = unidadesPorPaca;
     }
 
+    public Integer getPacasPorEstiba() {
+        return pacasPorEstiba;
+    }
+
+    public void setPacasPorEstiba(Integer pacasPorEstiba) {
+        this.pacasPorEstiba = pacasPorEstiba != null ? pacasPorEstiba : 100;
+    }
+
     public String getProveedor() {
         return proveedor;
     }
 
     public void setProveedor(String proveedor) {
-        // Validación para asegurar que solo sean los proveedores permitidos
         if (proveedor != null &&
                 !proveedor.equals("ING_MAYAGUEZ") &&
                 !proveedor.equals("ING_SAN_CARLOS")) {
@@ -171,7 +191,7 @@ public class Producto {
     }
 
     public void setUbicacion(String ubicacion) {
-        this.ubicacion = "ESTIBA"; // Siempre ESTIBA
+        this.ubicacion = "ESTIBA";
     }
 
     public LocalDateTime getFechaCreacion() {
@@ -190,17 +210,37 @@ public class Producto {
         this.fechaActualizacion = fechaActualizacion;
     }
 
-    // Método para calcular el peso total en inventario
+    public Integer getInventarioTotal() {
+        return cantidadStock + cantidadAveriada;
+    }
+
     public Double getPesoTotalInventario() {
         return cantidadStock * pesoPorPaca;
     }
 
-    // Método para verificar si está bajo stock mínimo
+    public Integer getTotalEstibas() {
+        if (pacasPorEstiba == null || pacasPorEstiba == 0) return 0;
+        return cantidadStock / pacasPorEstiba;
+    }
+
+    public Integer getPacasSueltas() {
+        if (pacasPorEstiba == null || pacasPorEstiba == 0) return cantidadStock;
+        return cantidadStock % pacasPorEstiba;
+    }
+
+    public Double getPesoPorEstiba() {
+        if (pacasPorEstiba == null || pesoPorPaca == null) return 0.0;
+        return pacasPorEstiba * pesoPorPaca;
+    }
+
+    public Double getPesoTotalEstibas() {
+        return getTotalEstibas() * getPesoPorEstiba();
+    }
+
     public boolean isBajoStockMinimo() {
         return cantidadStock <= stockMinimo;
     }
 
-    // Métodos estáticos para las opciones permitidas
     public static String[] getCategoriasPermitidas() {
         return new String[]{"AZUCAR_BLANCA", "AZUCAR_NATURAL"};
     }
@@ -215,13 +255,18 @@ public class Producto {
                 "referencia='" + referencia + '\'' +
                 ", nombre='" + nombre + '\'' +
                 ", lote='" + lote + '\'' +
+                ", descripcion='" + descripcion + '\'' +
                 ", categoria='" + categoria + '\'' +
                 ", cantidadStock=" + cantidadStock +
+                ", cantidadAveriada=" + cantidadAveriada +
                 ", stockMinimo=" + stockMinimo +
                 ", pesoPorPaca=" + pesoPorPaca +
                 ", unidadesPorPaca=" + unidadesPorPaca +
+                ", pacasPorEstiba=" + pacasPorEstiba +
                 ", proveedor='" + proveedor + '\'' +
                 ", ubicacion='" + ubicacion + '\'' +
+                ", fechaCreacion=" + fechaCreacion +
+                ", fechaActualizacion=" + fechaActualizacion +
                 '}';
     }
 }

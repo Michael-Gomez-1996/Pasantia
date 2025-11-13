@@ -33,8 +33,12 @@ public class ProcesamientoResponseDTO {
     public void setCliente(String cliente) { this.cliente = cliente; }
 
     public int getCantidadProductosProcesados() { return cantidadProductosProcesados; }
-    public void setCantidadProductosProcesados(int cantidadProductosProcesados) { this.cantidadProductosProcesados = cantidadProductosProcesados; }
+    public void setCantidadProductosProcesados(int cantidadProductosProcesados) {
+        this.cantidadProductosProcesados = cantidadProductosProcesados;
+    }
 
     public int getMovimientosGenerados() { return movimientosGenerados; }
-    public void setMovimientosGenerados(int movimientosGenerados) { this.movimientosGenerados = movimientosGenerados; }
+    public void setMovimientosGenerados(int movimientosGenerados) {
+        this.movimientosGenerados = movimientosGenerados;
+    }
 }

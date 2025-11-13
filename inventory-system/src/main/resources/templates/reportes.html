@@ -5,124 +5,468 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reportes - GMT Inventory</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .reporte-card {
+            border-left: 4px solid #0d6efd;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .reporte-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+            font-weight: bold;
+        }
+        .tabla-vista-previa {
+            font-size: 0.85rem;
+        }
+        .tabla-vista-previa th {
+            background-color: #e9ecef;
+            position: sticky;
+            top: 0;
+        }
+        .contenedor-vista-previa {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+        }
+        .stats-card {
+            border-left: 4px solid;
+            transition: transform 0.2s;
+        }
+        .stats-card:hover {
+            transform: translateY(-3px);
+        }
+        .stats-primary { border-left-color: #0d6efd; }
+        .stats-success { border-left-color: #198754; }
+        .stats-warning { border-left-color: #ffc107; }
+        .stats-info { border-left-color: #0dcaf0; }
+        .filtros-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .export-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border: none;
+            font-weight: bold;
+            color: white;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .kardex-btn {
+            background: linear-gradient(135deg, #6f42c1, #8a63d2);
+            border: none;
+            font-weight: bold;
+            color: white;
+        }
+        .modal-content {
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            background-color: #6f42c1;
+            color: white;
+            border-radius: 10px 10px 0 0;
+        }
+    </style>
 </head>
 <body>
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="/">🏭 GMT Inventory</a>
-        <div class="navbar-nav">
-            <a class="nav-link" href="/">Dashboard</a>
-            <a class="nav-link" href="/productos">Productos</a>
-            <a class="nav-link" href="/movimientos">Movimientos</a>
-            <a class="nav-link active" href="/reportes">Reportes</a>
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-warehouse me-2"></i>GMT Inventory
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="/">
+                    <i class="fas fa-home me-1"></i>Dashboard
+                </a>
+                <a class="nav-link" href="/productos">
+                    <i class="fas fa-boxes me-1"></i>Productos
+                </a>
+                <a class="nav-link" href="/movimientos">
+                    <i class="fas fa-exchange-alt me-1"></i>Movimientos
+                </a>
+                <a class="nav-link" href="/documentos/subir">
+                    <i class="fas fa-file-upload me-1"></i>Subir Documentos
+                </a>
+                <a class="nav-link active" href="/reportes">
+                    <i class="fas fa-chart-bar me-1"></i>Reportes
+                </a>
+            </div>
+            <div class="navbar-nav">
+                    <span class="navbar-text">
+                        <i class="fas fa-user me-1"></i>Sistema GMT
+                    </span>
+            </div>
         </div>
     </div>
 </nav>
 
 <div class="container mt-4">
-    <h4>📊 Reportes del Sistema</h4>
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-chart-bar me-2"></i>Reportes y Análisis</h1>
+        <a href="/" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Volver al Dashboard
+        </a>
+    </div>
 
-    <!-- Productos con bajo stock -->
-    <div class="card mb-4">
-        <div class="card-header bg-warning text-dark">
-            <h5>⚠ Productos con Stock Bajo</h5>
-        </div>
-        <div class="card-body">
-            <div th:if="${productosBajoStock.empty}" class="text-center text-muted">
-                ✅ No hay productos con stock bajo
+    <!-- Estadísticas Rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card stats-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Total Productos</h6>
+                            <h4 th:text="${totalProductos}" class="card-text">0</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-boxes fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div th:unless="${productosBajoStock.empty}">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>Referencia</th>
-                            <th>Nombre</th>
-                            <th>Categoría</th>
-                            <th>Stock Actual</th>
-                            <th>Stock Mínimo</th>
-                            <th>Proveedor</th>
-                            <th>Déficit</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:each="producto : ${productosBajoStock}">
-                            <td th:text="${producto.referencia}"></td>
-                            <td th:text="${producto.nombre}"></td>
-                            <td th:text="${producto.categoria}"></td>
-                            <td>
-                                <span class="badge bg-warning" th:text="${producto.cantidadStock}"></span>
-                            </td>
-                            <td th:text="${producto.stockMinimo}"></td>
-                            <td th:text="${producto.proveedor}"></td>
-                            <td>
-                                        <span class="badge bg-danger"
-                                              th:text="${producto.stockMinimo - producto.cantidadStock} + ' unidades'">
-                                        </span>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card stats-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Bajo Stock</h6>
+                            <h4 th:text="${productosBajoStock != null ? productosBajoStock.size() : 0}" class="card-text">0</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card stats-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Movimientos Hoy</h6>
+                            <h4 id="movimientosHoy" class="card-text">-</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exchange-alt fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card stats-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Documentos Procesados</h6>
+                            <h4 id="totalDocumentos" class="card-text">-</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-invoice fa-2x text-info"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Acciones de reportes -->
+    <!-- Navegación entre Reportes -->
     <div class="row">
-        <div class="col-md-4">
-            <div class="card text-center">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Tipo de Reporte</h6>
+                </div>
                 <div class="card-body">
-                    <h5>📋 Inventario Completo</h5>
-                    <p class="text-muted">Exportar lista completa de productos</p>
-                    <button class="btn btn-outline-primary" onclick="exportarInventario()">
-                        📥 Exportar a Excel
+                    <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+                        <button class="nav-link active" id="v-pills-movimientos-tab" data-bs-toggle="pill"
+                                data-bs-target="#v-pills-movimientos" type="button" role="tab">
+                            <i class="fas fa-exchange-alt me-2"></i>Movimientos
+                        </button>
+                        <button class="nav-link" id="v-pills-inventario-tab" data-bs-toggle="pill"
+                                data-bs-target="#v-pills-inventario" type="button" role="tab">
+                            <i class="fas fa-boxes me-2"></i>Inventario
+                        </button>
+                        <button class="nav-link" id="v-pills-stock-tab" data-bs-toggle="pill"
+                                data-bs-target="#v-pills-stock" type="button" role="tab">
+                            <i class="fas fa-chart-line me-2"></i>Stock por Categoría
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exportación Rápida -->
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-file-export me-2"></i>Exportación Rápida</h6>
+                </div>
+                <div class="card-body">
+                    <button class="btn export-btn w-100 mb-2" onclick="exportarMovimientos()" id="btnExportMovimientos">
+                        <i class="fas fa-file-excel me-2"></i>Movimientos a Excel
+                    </button>
+                    <button class="btn btn-info w-100 mb-2" onclick="exportarInventario()" id="btnExportInventario">
+                        <i class="fas fa-file-excel me-2"></i>Inventario a Excel
+                    </button>
+                    <!-- Botón para exportar Kardex -->
+                    <button class="btn kardex-btn w-100" onclick="abrirModalKardex()" id="btnExportKardex">
+                        <i class="fas fa-table me-2"></i>Exportar Kardex
                     </button>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5>📈 Movimientos</h5>
-                    <p class="text-muted">Reporte de movimientos por fecha</p>
-                    <button class="btn btn-outline-success" onclick="exportarMovimientos()">
-                        📥 Exportar Movimientos
-                    </button>
+
+        <!-- Contenido de Reportes -->
+        <div class="col-md-9">
+            <div class="tab-content" id="v-pills-tabContent">
+
+                <!-- Reporte de Movimientos -->
+                <div class="tab-pane fade show active" id="v-pills-movimientos" role="tabpanel">
+                    <div class="card reporte-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Reporte de Movimientos</h5>
+                            <span class="badge bg-primary" id="contadorMovimientos">0 registros</span>
+                        </div>
+                        <div class="card-body">
+                            <!-- Filtros -->
+                            <div class="filtros-section">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Fecha Inicio</label>
+                                        <input type="date" class="form-control" id="fechaInicioMovimientos">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Fecha Fin</label>
+                                        <input type="date" class="form-control" id="fechaFinMovimientos">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">&nbsp;</label>
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-primary" onclick="cargarReporteMovimientos()">
+                                                <i class="fas fa-filter me-1"></i>Filtrar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <small class="text-muted">Rangos rápidos:</small>
+                                        <button class="btn btn-sm btn-outline-secondary ms-2" onclick="aplicarRangoMovimientos('hoy')">Hoy</button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="aplicarRangoMovimientos('ayer')">Ayer</button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="aplicarRangoMovimientos('semana')">Esta semana</button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="aplicarRangoMovimientos('mes')">Este mes</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Vista Previa -->
+                            <div class="contenedor-vista-previa mt-3">
+                                <table class="table table-sm tabla-vista-previa" id="tablaMovimientos">
+                                    <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Remisión</th>
+                                        <th>Factura</th>
+                                        <th>Tipo</th>
+                                        <th>Origen</th>
+                                        <th>Destino</th>
+                                        <th>Unidades</th>
+                                        <th>Valor</th>
+                                        <th>Conductor</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="cuerpoTablaMovimientos">
+                                    <!-- Los datos se cargarán aquí -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Mensaje vacío -->
+                            <div id="mensajeMovimientosVacio" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>No hay movimientos para mostrar</p>
+                                <p class="small">Selecciona un rango de fechas o haz clic en "Filtrar"</p>
+                            </div>
+
+                            <!-- Loading -->
+                            <div id="loadingMovimientos" class="text-center py-4 loading-spinner">
+                                <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                                <p>Cargando movimientos...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5>🚨 Alertas</h5>
-                    <p class="text-muted">Reporte de productos críticos</p>
-                    <button class="btn btn-outline-warning" onclick="exportarAlertas()">
-                        📥 Exportar Alertas
-                    </button>
+
+                <!-- Reporte de Inventario -->
+                <div class="tab-pane fade" id="v-pills-inventario" role="tabpanel">
+                    <div class="card reporte-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Reporte de Inventario</h5>
+                            <span class="badge bg-primary" id="contadorInventario">0 productos</span>
+                        </div>
+                        <div class="card-body">
+                            <!-- Filtros Inventario -->
+                            <div class="filtros-section">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Categoría</label>
+                                        <select class="form-select" id="filtroCategoria" onchange="filtrarInventario()">
+                                            <option value="">Todas las categorías</option>
+                                            <option value="AZUCAR_BLANCA">Azúcar Blanca</option>
+                                            <option value="AZUCAR_NATURAL">Azúcar Natural</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Proveedor</label>
+                                        <select class="form-select" id="filtroProveedor" onchange="filtrarInventario()">
+                                            <option value="">Todos los proveedores</option>
+                                            <option value="ING_MAYAGUEZ">Ingenio Mayagüez</option>
+                                            <option value="ING_SAN_CARLOS">Ingenio San Carlos</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Estado Stock</label>
+                                        <select class="form-select" id="filtroEstadoStock" onchange="filtrarInventario()">
+                                            <option value="">Todos</option>
+                                            <option value="normal">Stock Normal</option>
+                                            <option value="bajo">Stock Bajo</option>
+                                            <option value="critico">Stock Crítico</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Vista Previa Inventario -->
+                            <div class="contenedor-vista-previa mt-3">
+                                <table class="table table-sm tabla-vista-previa" id="tablaInventario">
+                                    <thead>
+                                    <tr>
+                                        <th>Referencia</th>
+                                        <th>Nombre</th>
+                                        <th>Categoría</th>
+                                        <th>Stock</th>
+                                        <th>Mínimo</th>
+                                        <th>Peso Paca</th>
+                                        <th>Proveedor</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="cuerpoTablaInventario">
+                                    <!-- Los datos se cargarán aquí -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Mensaje vacío -->
+                            <div id="mensajeInventarioVacio" class="text-center text-muted py-4">
+                                <i class="fas fa-box-open fa-3x mb-3"></i>
+                                <p>No hay productos en inventario</p>
+                            </div>
+
+                            <!-- Loading -->
+                            <div id="loadingInventario" class="text-center py-4 loading-spinner">
+                                <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                                <p>Cargando inventario...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reporte de Stock por Categoría -->
+                <div class="tab-pane fade" id="v-pills-stock" role="tabpanel">
+                    <div class="card reporte-card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Stock por Categoría</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h6>Azúcar Blanca</h6>
+                                            <h3 class="text-primary" id="stockBlanca">0</h3>
+                                            <small class="text-muted">Total unidades</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h6>Azúcar Natural</h6>
+                                            <h3 class="text-success" id="stockNatural">0</h3>
+                                            <small class="text-muted">Total unidades</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <h6>Resumen por Proveedor</h6>
+                                <div id="resumenProveedores" class="mt-2">
+                                    <!-- Resumen se cargará aquí -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Estadísticas rápidas -->
-    <div class="card mt-4">
-        <div class="card-header">
-            <h5>📈 Estadísticas Rápidas</h5>
-        </div>
-        <div class="card-body">
-            <div class="row text-center">
-                <div class="col-md-3">
-                    <h6>Total Productos</h6>
-                    <h3 th:text="${productosBajoStock.size() + ' / ' + totalProductos}"></h3>
-                    <small class="text-muted">Bajo Stock / Total</small>
+<!-- Modal para Exportar Kardex -->
+<div class="modal fade" id="modalKardex" tabindex="-1" aria-labelledby="modalKardexLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalKardexLabel">
+                    <i class="fas fa-table me-2"></i>Exportar Kardex
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Selecciona el rango de fechas para generar el Kardex diario:</p>
+
+                <div class="mb-3">
+                    <label for="fechaInicioKardex" class="form-label">Fecha Inicio</label>
+                    <input type="date" class="form-control" id="fechaInicioKardex">
                 </div>
-                <div class="col-md-3">
-                    <h6>Estado General</h6>
-                    <h3 th:if="${productosBajoStock.empty}" class="text-success">✅ Óptimo</h3>
-                    <h3 th:unless="${productosBajoStock.empty}" class="text-warning">⚠ Atención</h3>
+
+                <div class="mb-3">
+                    <label for="fechaFinKardex" class="form-label">Fecha Fin</label>
+                    <input type="date" class="form-control" id="fechaFinKardex">
                 </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Rangos rápidos:</small>
+                    <div class="mt-1">
+                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="aplicarRangoKardex('hoy')">Hoy</button>
+                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="aplicarRangoKardex('semana')">Esta semana</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="aplicarRangoKardex('mes')">Este mes</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn kardex-btn" onclick="exportarKardex()" id="btnExportarKardex">
+                    <i class="fas fa-file-excel me-2"></i>Exportar Kardex
+                </button>
             </div>
         </div>
     </div>
@@ -130,17 +474,471 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function exportarInventario() {
-        alert('📊 Función de exportación de inventario - Próximamente');
+    // ==============================================
+    // INICIALIZACIÓN
+    // ==============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Establecer fechas por defecto
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaInicioMovimientos').value = hoy;
+        document.getElementById('fechaFinMovimientos').value = hoy;
+
+        // Establecer fechas por defecto para Kardex
+        const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+        document.getElementById('fechaInicioKardex').value = inicioMes;
+        document.getElementById('fechaFinKardex').value = hoy;
+
+        // Cargar datos iniciales
+        cargarEstadisticas();
+        cargarReporteMovimientos();
+    });
+
+    // ==============================================
+    // FUNCIONES PARA KARDEX
+    // ==============================================
+    function abrirModalKardex() {
+        const modalKardex = new bootstrap.Modal(document.getElementById('modalKardex'));
+        modalKardex.show();
     }
 
-    function exportarMovimientos() {
-        alert('📈 Función de exportación de movimientos - Próximamente');
+    function aplicarRangoKardex(rango) {
+        const hoy = new Date();
+        let inicio, fin;
+
+        switch(rango) {
+            case 'hoy':
+                inicio = fin = hoy.toISOString().split('T')[0];
+                break;
+            case 'semana':
+                inicio = new Date(hoy.setDate(hoy.getDate()-7)).toISOString().split('T')[0];
+                fin = new Date().toISOString().split('T')[0];
+                break;
+            case 'mes':
+                inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+                fin = new Date().toISOString().split('T')[0];
+                break;
+        }
+
+        document.getElementById('fechaInicioKardex').value = inicio;
+        document.getElementById('fechaFinKardex').value = fin;
     }
 
-    function exportarAlertas() {
-        alert('🚨 Función de exportación de alertas - Próximamente');
+    async function exportarKardex() {
+        const btn = document.getElementById('btnExportarKardex');
+        const originalText = btn.innerHTML;
+
+        try {
+            const fechaInicio = document.getElementById('fechaInicioKardex').value;
+            const fechaFin = document.getElementById('fechaFinKardex').value;
+
+            if (!fechaInicio || !fechaFin) {
+                alert('Por favor selecciona ambas fechas');
+                return;
+            }
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando Kardex...';
+            btn.disabled = true;
+
+            const url = `/api/kardex/exportar?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`;
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Error generando Kardex: ' + response.status);
+            }
+
+            const blob = await response.blob();
+            descargarArchivo(blob, `kardex_${fechaInicio}_a_${fechaFin}.xlsx`);
+
+            // Cerrar el modal después de la exportación exitosa
+            const modalKardex = bootstrap.Modal.getInstance(document.getElementById('modalKardex'));
+            modalKardex.hide();
+
+        } catch (error) {
+            console.error('Error exportando Kardex:', error);
+            alert('Error al exportar Kardex: ' + error.message);
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
+
+    // ==============================================
+    // FUNCIONES DE REPORTE DE MOVIMIENTOS
+    // ==============================================
+    async function cargarReporteMovimientos() {
+        const fechaInicio = document.getElementById('fechaInicioMovimientos').value;
+        const fechaFin = document.getElementById('fechaFinMovimientos').value;
+
+        if (!fechaInicio || !fechaFin) {
+            alert('Por favor selecciona ambas fechas');
+            return;
+        }
+
+        mostrarLoading('loadingMovimientos', 'mensajeMovimientosVacio');
+
+        try {
+            let url = `/api/reportes/movimientos-excel?fechaInicio=${fechaInicio}T00:00:00&fechaFin=${fechaFin}T23:59:59`;
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Error al cargar movimientos: ' + response.status);
+            }
+
+            const movimientos = await response.json();
+            mostrarMovimientosEnTabla(movimientos);
+
+        } catch (error) {
+            console.error('Error:', error);
+            mostrarError('cuerpoTablaMovimientos', 'Error cargando movimientos: ' + error.message);
+        } finally {
+            ocultarLoading('loadingMovimientos');
+        }
+    }
+
+    function mostrarMovimientosEnTabla(movimientos) {
+        const cuerpo = document.getElementById('cuerpoTablaMovimientos');
+        const contador = document.getElementById('contadorMovimientos');
+        const mensajeVacio = document.getElementById('mensajeMovimientosVacio');
+
+        contador.textContent = `${movimientos.length} registros`;
+
+        if (movimientos.length === 0) {
+            cuerpo.innerHTML = '';
+            mensajeVacio.style.display = 'block';
+            return;
+        }
+
+        mensajeVacio.style.display = 'none';
+
+        let html = '';
+        movimientos.forEach(mov => {
+            // ✅ MEJORADO: Manejar diferentes tipos de movimiento con colores distintivos
+            let badgeClass, badgeText;
+
+            switch(mov.tipoMovimiento) {
+                case 'ENTRADA':
+                    badgeClass = 'bg-success';
+                    badgeText = 'ENTRADA';
+                    break;
+                case 'SALIDA':
+                    badgeClass = 'bg-danger';
+                    badgeText = 'SALIDA';
+                    break;
+                case 'SALIDA_AVERIAS':
+                    badgeClass = 'bg-warning';
+                    badgeText = 'DEV. AVERÍAS';
+                    break;
+                case 'AJUSTE_POSITIVO':
+                    badgeClass = 'bg-info';
+                    badgeText = 'AJUSTE +';
+                    break;
+                case 'AJUSTE_NEGATIVO':
+                    badgeClass = 'bg-secondary';
+                    badgeText = 'AJUSTE -';
+                    break;
+                default:
+                    badgeClass = 'bg-light text-dark';
+                    badgeText = mov.tipoMovimiento;
+            }
+
+            html += `
+                <tr>
+                    <td>${formatearFecha(mov.fecha)}</td>
+                    <td><small class="text-muted">${mov.numeroRemision || 'N/A'}</small></td>
+                    <td><small class="text-muted">${mov.numeroFactura || 'N/A'}</small></td>
+                    <td>
+                        <span class="badge ${badgeClass}">
+                            ${badgeText}
+                        </span>
+                    </td>
+                    <td><small>${mov.origen || 'N/A'}</small></td>
+                    <td><small>${mov.destino || 'N/A'}</small></td>
+                    <td class="text-end">${mov.totalUnidades || 0}</td>
+                    <td class="text-end">${formatearMoneda(mov.valorTotal)}</td>
+                    <td><small>${mov.conductorNombre || 'N/A'}</small></td>
+                </tr>
+            `;
+        });
+
+        cuerpo.innerHTML = html;
+    }
+
+    function aplicarRangoMovimientos(rango) {
+        const hoy = new Date();
+        let inicio, fin;
+
+        switch(rango) {
+            case 'hoy':
+                inicio = fin = hoy.toISOString().split('T')[0];
+                break;
+            case 'ayer':
+                const ayer = new Date(hoy);
+                ayer.setDate(hoy.getDate() - 1);
+                inicio = fin = ayer.toISOString().split('T')[0];
+                break;
+            case 'semana':
+                inicio = new Date(hoy.setDate(hoy.getDate()-7)).toISOString().split('T')[0];
+                fin = new Date().toISOString().split('T')[0];
+                break;
+            case 'mes':
+                inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+                fin = new Date().toISOString().split('T')[0];
+                break;
+        }
+
+        document.getElementById('fechaInicioMovimientos').value = inicio;
+        document.getElementById('fechaFinMovimientos').value = fin;
+        cargarReporteMovimientos();
+    }
+
+    // ==============================================
+    // FUNCIONES DE REPORTE DE INVENTARIO
+    // ==============================================
+    async function cargarReporteInventario() {
+        mostrarLoading('loadingInventario', 'mensajeInventarioVacio');
+
+        try {
+            const response = await fetch('/api/reportes/inventario-excel');
+            if (!response.ok) {
+                throw new Error('Error al cargar inventario: ' + response.status);
+            }
+
+            const inventario = await response.json();
+            mostrarInventarioEnTabla(inventario);
+
+        } catch (error) {
+            console.error('Error:', error);
+            mostrarError('cuerpoTablaInventario', 'Error cargando inventario: ' + error.message);
+        } finally {
+            ocultarLoading('loadingInventario');
+        }
+    }
+
+    function mostrarInventarioEnTabla(inventario) {
+        const cuerpo = document.getElementById('cuerpoTablaInventario');
+        const contador = document.getElementById('contadorInventario');
+        const mensajeVacio = document.getElementById('mensajeInventarioVacio');
+
+        // Aplicar filtros
+        const categoria = document.getElementById('filtroCategoria').value;
+        const proveedor = document.getElementById('filtroProveedor').value;
+        const estadoStock = document.getElementById('filtroEstadoStock').value;
+
+        let inventarioFiltrado = inventario;
+
+        if (categoria) {
+            inventarioFiltrado = inventarioFiltrado.filter(p => p.categoria === categoria);
+        }
+
+        if (proveedor) {
+            inventarioFiltrado = inventarioFiltrado.filter(p => p.proveedor === proveedor);
+        }
+
+        if (estadoStock) {
+            inventarioFiltrado = inventarioFiltrado.filter(p => {
+                const stock = p.cantidadStock || 0;
+                const minimo = p.stockMinimo || 0;
+
+                if (estadoStock === 'normal') return stock > minimo;
+                if (estadoStock === 'bajo') return stock <= minimo && stock > 20;
+                if (estadoStock === 'critico') return stock <= 20;
+                return true;
+            });
+        }
+
+        contador.textContent = `${inventarioFiltrado.length} productos`;
+
+        if (inventarioFiltrado.length === 0) {
+            cuerpo.innerHTML = '';
+            mensajeVacio.style.display = 'block';
+            return;
+        }
+
+        mensajeVacio.style.display = 'none';
+
+        let html = '';
+        inventarioFiltrado.forEach(producto => {
+            const stock = producto.cantidadStock || 0;
+            const minimo = producto.stockMinimo || 0;
+            let estadoClass, estadoText;
+
+            if (stock <= 20) {
+                estadoClass = 'bg-danger';
+                estadoText = 'Crítico';
+            } else if (stock <= minimo) {
+                estadoClass = 'bg-warning';
+                estadoText = 'Bajo';
+            } else {
+                estadoClass = 'bg-success';
+                estadoText = 'Normal';
+            }
+
+            html += `
+                <tr>
+                    <td><strong>${producto.referencia}</strong></td>
+                    <td><small>${producto.nombre}</small></td>
+                    <td>
+                        <span class="badge ${producto.categoria === 'AZUCAR_BLANCA' ? 'bg-light text-dark' : 'bg-dark'}">
+                            ${producto.categoria}
+                        </span>
+                    </td>
+                    <td class="text-end"><strong>${stock}</strong></td>
+                    <td class="text-end">${minimo}</td>
+                    <td class="text-end">${producto.pesoPorPaca || 0} kg</td>
+                    <td><small>${producto.proveedor}</small></td>
+                    <td><span class="badge ${estadoClass}">${estadoText}</span></td>
+                </tr>
+            `;
+        });
+
+        cuerpo.innerHTML = html;
+    }
+
+    function filtrarInventario() {
+        cargarReporteInventario();
+    }
+
+    // ==============================================
+    // FUNCIONES DE EXPORTACIÓN A EXCEL
+    // ==============================================
+    async function exportarMovimientos() {
+        const btn = document.getElementById('btnExportMovimientos');
+        const originalText = btn.innerHTML;
+
+        try {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando Excel...';
+            btn.disabled = true;
+
+            const fechaInicio = document.getElementById('fechaInicioMovimientos').value;
+            const fechaFin = document.getElementById('fechaFinMovimientos').value;
+
+            let url = '/api/reportes/descargar-movimientos';
+            if (fechaInicio && fechaFin) {
+                url += `?fechaInicio=${fechaInicio}T00:00:00&fechaFin=${fechaFin}T23:59:59`;
+            }
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Error generando Excel: ' + response.status);
+            }
+
+            const blob = await response.blob();
+            descargarArchivo(blob, `reporte_movimientos_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+        } catch (error) {
+            console.error('Error exportando movimientos:', error);
+            alert('Error al exportar: ' + error.message);
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function exportarInventario() {
+        const btn = document.getElementById('btnExportInventario');
+        const originalText = btn.innerHTML;
+
+        try {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando Excel...';
+            btn.disabled = true;
+
+            const response = await fetch('/api/reportes/descargar-inventario');
+            if (!response.ok) {
+                throw new Error('Error generando Excel: ' + response.status);
+            }
+
+            const blob = await response.blob();
+            descargarArchivo(blob, `reporte_inventario_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+        } catch (error) {
+            console.error('Error exportando inventario:', error);
+            alert('Error al exportar: ' + error.message);
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    function descargarArchivo(blob, filename) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+
+    // ==============================================
+    // FUNCIONES AUXILIARES
+    // ==============================================
+    function formatearFecha(fechaString) {
+        if (!fechaString) return 'N/A';
+        const fecha = new Date(fechaString);
+        return fecha.toLocaleDateString('es-ES');
+    }
+
+    function formatearMoneda(valor) {
+        if (!valor) return '$0';
+        return new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            minimumFractionDigits: 0
+        }).format(valor);
+    }
+
+    function mostrarLoading(loadingId, mensajeId) {
+        document.getElementById(loadingId).style.display = 'block';
+        if (mensajeId) {
+            document.getElementById(mensajeId).style.display = 'none';
+        }
+    }
+
+    function ocultarLoading(loadingId) {
+        document.getElementById(loadingId).style.display = 'none';
+    }
+
+    function mostrarError(elementoId, mensaje) {
+        document.getElementById(elementoId).innerHTML = `
+            <tr>
+                <td colspan="9" class="text-center text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>${mensaje}
+                </td>
+            </tr>
+        `;
+    }
+
+    async function cargarEstadisticas() {
+        try {
+            // Cargar inventario para estadísticas
+            const response = await fetch('/api/reportes/inventario-excel');
+            if (response.ok) {
+                const inventario = await response.json();
+
+                // Calcular stock por categoría
+                const stockBlanca = inventario
+                    .filter(p => p.categoria === 'AZUCAR_BLANCA')
+                    .reduce((sum, p) => sum + (p.cantidadStock || 0), 0);
+
+                const stockNatural = inventario
+                    .filter(p => p.categoria === 'AZUCAR_NATURAL')
+                    .reduce((sum, p) => sum + (p.cantidadStock || 0), 0);
+
+                document.getElementById('stockBlanca').textContent = stockBlanca;
+                document.getElementById('stockNatural').textContent = stockNatural;
+
+                // Cargar reporte de inventario en la pestaña correspondiente
+                cargarReporteInventario();
+            }
+        } catch (error) {
+            console.error('Error cargando estadísticas:', error);
+        }
+    }
+
+    // Cambiar entre pestañas
+    document.getElementById('v-pills-inventario-tab').addEventListener('click', cargarReporteInventario);
+    document.getElementById('v-pills-stock-tab').addEventListener('click', cargarEstadisticas);
 </script>
 </body>
 </html>

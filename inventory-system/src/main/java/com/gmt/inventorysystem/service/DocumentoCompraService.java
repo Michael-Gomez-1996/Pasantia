@@ -1,5 +1,7 @@
 package com.gmt.inventorysystem.service;
 
+import com.gmt.inventorysystem.dto.DocumentoCompraDTO;
+import com.gmt.inventorysystem.dto.MovimientoDTO;
 import com.gmt.inventorysystem.model.DocumentoCompra;
 import com.gmt.inventorysystem.model.MovimientoInventario;
 import com.gmt.inventorysystem.model.Producto;
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class DocumentoCompraService {
@@ -45,6 +48,22 @@ public class DocumentoCompraService {
     // Obtener todos los documentos compra
     public List<DocumentoCompra> obtenerTodosDocumentosCompra() {
         return documentoCompraRepository.findAllWithMovimientos();
+    }
+
+    // NUEVO MÉTODO: Obtener todos los documentos compra como DTOs
+    public List<DocumentoCompraDTO> obtenerTodosDocumentosCompraDTO() {
+        List<DocumentoCompra> documentos = documentoCompraRepository.findAllWithMovimientos();
+        return documentos.stream()
+                .map(DocumentoCompraDTO::new)
+                .collect(Collectors.toList());
+    }
+
+    // NUEVO MÉTODO: Obtener movimientos por documento compra como DTOs
+    public List<MovimientoDTO> obtenerMovimientosPorDocumentoCompraDTO(Long documentoCompraId) {
+        List<MovimientoInventario> movimientos = movimientoInventarioRepository.findByDocumentoCompraIdWithDocumentoCompra(documentoCompraId);
+        return movimientos.stream()
+                .map(MovimientoDTO::new)
+                .collect(Collectors.toList());
     }
 
     // Obtener documento compra por ID con movimientos

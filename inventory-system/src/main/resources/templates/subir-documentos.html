@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subir Documentos - GMT Inventory</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .upload-area {
             border: 2px dashed #ccc;
@@ -14,16 +15,80 @@
             margin-bottom: 1rem;
             background-color: #f8f9fa;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
         .upload-area:hover {
             border-color: #0d6efd;
             background-color: #e9ecef;
+        }
+        .upload-area.dragover {
+            border-color: #0d6efd;
+            background-color: #e3f2fd;
         }
         .documento-info {
             background-color: #e7f3ff;
             border-left: 4px solid #0d6efd;
             padding: 1rem;
             margin-bottom: 1rem;
+            border-radius: 5px;
+        }
+        .preview-card {
+            background-color: #f8fff9;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        .preview-loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        .preview-error {
+            background-color: #ffeaa7;
+            border: 2px solid #fdcb6e;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .producto-table {
+            font-size: 0.9rem;
+        }
+        .producto-table th {
+            background-color: #e9ecef;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .step {
+            text-align: center;
+            flex: 1;
+        }
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+        }
+        .step.active .step-number {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .step.completed .step-number {
+            background-color: #28a745;
+            color: white;
+        }
+        .modal-backdrop {
+            z-index: 1040;
+        }
+        .modal {
+            z-index: 1050;
         }
     </style>
 </head>
@@ -31,19 +96,35 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="/">🏭 GMT Inventory</a>
-        <div class="navbar-nav me-auto">
-            <a class="nav-link" href="/">Dashboard</a>
-            <a class="nav-link" href="/productos">Productos</a>
-            <a class="nav-link" href="/movimientos">Movimientos</a>
-            <a class="nav-link" href="/reportes">Reportes</a>
-            <a class="nav-link active" href="/documentos/subir">Subir Documentos</a>
-        </div>
-        <div class="navbar-nav">
-            <span class="navbar-text me-3">👤 Usuario: <strong>admin</strong></span>
-            <form th:action="@{/logout}" method="post" class="d-inline">
-                <button type="submit" class="btn btn-outline-light btn-sm">Cerrar Sesión</button>
-            </form>
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-warehouse me-2"></i>GMT Inventory
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="/">
+                    <i class="fas fa-home me-1"></i>Dashboard
+                </a>
+                <a class="nav-link" href="/productos">
+                    <i class="fas fa-boxes me-1"></i>Productos
+                </a>
+                <a class="nav-link" href="/movimientos">
+                    <i class="fas fa-exchange-alt me-1"></i>Movimientos
+                </a>
+                <a class="nav-link active" href="/documentos/subir">
+                    <i class="fas fa-file-upload me-1"></i>Subir Documentos
+                </a>
+                <a class="nav-link" href="/reportes">
+                    <i class="fas fa-chart-bar me-1"></i>Reportes
+                </a>
+            </div>
+            <div class="navbar-nav">
+                    <span class="navbar-text">
+                        <i class="fas fa-user me-1"></i>Sistema GMT
+                    </span>
+            </div>
         </div>
     </div>
 </nav>
@@ -51,28 +132,48 @@
 <div class="container mt-4">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Subir Documentos</h1>
-        <a th:href="@{/movimientos}" class="btn btn-outline-secondary">← Ver Movimientos</a>
+        <h1><i class="fas fa-file-upload me-2"></i>Subir Documentos</h1>
+        <a href="/movimientos" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Ver Movimientos
+        </a>
+    </div>
+
+    <!-- Indicador de pasos -->
+    <div class="step-indicator">
+        <div class="step active">
+            <div class="step-number">1</div>
+            <div>Subir Archivos</div>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <div>Previsualizar</div>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <div>Procesar</div>
+        </div>
     </div>
 
     <!-- Mensajes de alerta -->
     <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>
         <strong>¡Éxito!</strong> <span th:text="${success}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
     <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>
         <strong>Error:</strong> <span th:text="${error}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
     <!-- Detalles del procesamiento -->
     <div th:if="${detalles}" class="documento-info">
-        <h5>📋 Documentos Procesados Exitosamente:</h5>
+        <h5><i class="fas fa-check-circle me-2 text-success"></i>Documentos Procesados Exitosamente:</h5>
         <div class="row">
             <div class="col-md-6">
-                <p><strong>Remisión:</strong> <span th:text="${detalles.numeroRemision}"></span></p>
                 <p><strong>Factura:</strong> <span th:text="${detalles.numeroFactura}"></span></p>
+                <p><strong>Remisión:</strong> <span th:text="${detalles.numeroRemision}"></span></p>
                 <p><strong>Cliente:</strong> <span th:text="${detalles.cliente}"></span></p>
             </div>
             <div class="col-md-6">
@@ -81,57 +182,86 @@
             </div>
         </div>
         <div class="mt-2">
-            <a th:href="@{/movimientos}" class="btn btn-primary btn-sm">Ver en Historial de Movimientos</a>
+            <a th:href="@{/movimientos}" class="btn btn-primary btn-sm">
+                <i class="fas fa-eye me-1"></i>Ver en Historial de Movimientos
+            </a>
+        </div>
+    </div>
+
+    <!-- PREVISUALIZACIÓN DE DATOS EXTRAÍDOS -->
+    <div id="previewContainer" style="display: none;">
+        <div class="preview-card">
+            <h5><i class="fas fa-search me-2"></i>Vista Previa - Datos Extraídos</h5>
+            <div id="previewContent">
+                <!-- Los datos se cargarán aquí por JavaScript -->
+            </div>
+            <div class="mt-2">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Esta es una previsualización. Los datos se guardarán al hacer clic en "Procesar Documentos"
+                </small>
+            </div>
         </div>
     </div>
 
     <!-- Formulario de subida -->
     <div class="card">
         <div class="card-header">
-            <h5 class="card-title mb-0">📤 Subir Remisión y Factura</h5>
+            <h5 class="card-title mb-0"><i class="fas fa-file-pdf me-2"></i>Subir Remisión y Factura</h5>
         </div>
         <div class="card-body">
-            <form th:action="@{/documentos/procesar}" method="post" enctype="multipart/form-data">
-
+            <form id="uploadForm">
                 <!-- Archivo de Remisión -->
                 <div class="mb-4">
-                    <label for="archivoRemision" class="form-label fw-bold">Remisión GMT (*.pdf)</label>
-                    <div class="upload-area">
+                    <label for="archivoRemision" class="form-label fw-bold">
+                        <i class="fas fa-truck me-1"></i>Remisión GMT (*.pdf)
+                    </label>
+                    <div class="upload-area" id="remisionArea">
                         <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
-                        <p class="text-muted" id="remisionFileName">Arrastra o selecciona el archivo de remisión</p>
-                        <input type="file" class="form-control" id="archivoRemision" name="archivoRemision"
-                               accept=".pdf" required onchange="updateFileName(this, 'remisionFileName')">
+                        <p class="text-muted" id="remisionFileName">
+                            <i class="fas fa-cloud-upload-alt me-1"></i>Arrastra o selecciona el archivo de remisión
+                        </p>
+                        <input type="file" class="form-control d-none" id="archivoRemision" name="archivoRemision"
+                               accept=".pdf" required onchange="updateFileName(this, 'remisionFileName'); previsualizarDatos()">
                         <small class="form-text text-muted">
-                            Formato GMT: Debe contener número de remisión, placa, conductor y tabla de productos
+                            Formato GMT: Debe contener número de remisión, cliente, cédula conductor y tabla de productos
                         </small>
                     </div>
                 </div>
 
                 <!-- Archivo de Factura -->
                 <div class="mb-4">
-                    <label for="archivoFactura" class="form-label fw-bold">Factura (*.pdf)</label>
-                    <div class="upload-area">
+                    <label for="archivoFactura" class="form-label fw-bold">
+                        <i class="fas fa-file-invoice me-1"></i>Factura (*.pdf)
+                    </label>
+                    <div class="upload-area" id="facturaArea">
                         <i class="fas fa-file-invoice fa-3x text-primary mb-3"></i>
-                        <p class="text-muted" id="facturaFileName">Arrastra o selecciona el archivo de factura</p>
-                        <input type="file" class="form-control" id="archivoFactura" name="archivoFactura"
-                               accept=".pdf" required onchange="updateFileName(this, 'facturaFileName')">
+                        <p class="text-muted" id="facturaFileName">
+                            <i class="fas fa-cloud-upload-alt me-1"></i>Arrastra o selecciona el archivo de factura
+                        </p>
+                        <input type="file" class="form-control d-none" id="archivoFactura" name="archivoFactura"
+                               accept=".pdf" required onchange="updateFileName(this, 'facturaFileName'); previsualizarDatos()">
                         <small class="form-text text-muted">
-                            Debe contener número de factura, cliente, fecha, peso y valor total
+                            Solo se necesita para extraer número de factura y fecha de generación
                         </small>
                     </div>
                 </div>
 
                 <!-- Usuario -->
                 <div class="mb-3">
-                    <label for="usuario" class="form-label">Usuario que procesa</label>
+                    <label for="usuario" class="form-label">
+                        <i class="fas fa-user me-1"></i>Usuario que procesa
+                    </label>
                     <input type="text" class="form-control" id="usuario" name="usuario"
                            value="Sistema" placeholder="Nombre del usuario">
                 </div>
 
                 <!-- Botones -->
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <button type="reset" class="btn btn-secondary me-md-2">Limpiar</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-secondary me-md-2" onclick="limpiarFormulario()">
+                        <i class="fas fa-broom me-1"></i>Limpiar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="procesarDocumentosConValidacion()">
                         <i class="fas fa-upload me-2"></i>Procesar Documentos
                     </button>
                 </div>
@@ -142,12 +272,13 @@
     <!-- Información adicional -->
     <div class="card mt-4">
         <div class="card-header">
-            <h6 class="card-title mb-0">ℹ️ Información del Proceso</h6>
+            <h6 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Información del Proceso</h6>
         </div>
         <div class="card-body">
             <p>Al subir los documentos, el sistema automáticamente:</p>
             <ul>
-                <li>Extraerá los datos de la remisión y factura</li>
+                <li>Extraerá <strong>todos los datos de la remisión</strong> (cliente, NIT, cédula, productos, fecha despacho)</li>
+                <li>Extraerá <strong>número de factura y fecha</strong> de la factura</li>
                 <li>Creará movimientos de <strong>SALIDA</strong> en el inventario</li>
                 <li>Actualizará el stock de los productos</li>
                 <li>Agrupará los movimientos por documento para el historial</li>
@@ -162,39 +293,618 @@
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // ==============================================
+    // VARIABLES GLOBALES PARA EL PROCESAMIENTO
+    // ==============================================
+    let datosProcesamientoPendiente = null;
+    let usuarioProcesamiento = 'Sistema';
+
+    // ==============================================
+    // FUNCIONES EXISTENTES (mantener)
+    // ==============================================
+
     // Actualizar nombre del archivo seleccionado
     function updateFileName(input, elementId) {
         const fileName = input.files[0]?.name || 'No se seleccionó archivo';
         document.getElementById(elementId).textContent = fileName;
+        document.getElementById(elementId).innerHTML = `<i class="fas fa-file me-1"></i>${fileName}`;
     }
 
-    // Mejorar la experiencia de arrastrar y soltar
-    document.querySelectorAll('.upload-area').forEach(area => {
-        const input = area.querySelector('input[type="file"]');
-        const text = area.querySelector('p');
+    // Previsualizar datos extraídos de los PDFs
+    async function previsualizarDatos() {
+        const archivoRemision = document.getElementById('archivoRemision').files[0];
+        const archivoFactura = document.getElementById('archivoFactura').files[0];
+        const previewContainer = document.getElementById('previewContainer');
+        const previewContent = document.getElementById('previewContent');
+
+        // Ocultar previsualización si no hay ambos archivos
+        if (!archivoRemision || !archivoFactura) {
+            previewContainer.style.display = 'none';
+            return;
+        }
+
+        // Mostrar loading
+        previewContent.innerHTML = `
+            <div class="preview-loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Extrayendo datos de los PDFs...</p>
+            </div>
+        `;
+        previewContainer.style.display = 'block';
+
+        try {
+            const formData = new FormData();
+            formData.append('archivoRemision', archivoRemision);
+            formData.append('archivoFactura', archivoFactura);
+
+            const response = await fetch('/documentos/previsualizar', {
+                method: 'POST',
+                body: formData
+            });
+
+            const resultado = await response.json();
+
+            if (resultado.success) {
+                let detallesHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-check-circle me-2 text-success"></i>Datos extraídos correctamente</strong></p>
+                            <p><strong>Factura:</strong> ${resultado.numeroFactura}</p>
+                            <p><strong>Remisión:</strong> ${resultado.numeroRemision}</p>
+                            <p><strong>Cliente:</strong> ${resultado.cliente}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Total Productos:</strong> ${resultado.cantidadProductosProcesados}</p>
+                `;
+
+                // Mostrar detalles adicionales si están disponibles
+                if (resultado.message.includes('|')) {
+                    const detalles = resultado.message.split('|').slice(1);
+                    detallesHTML += `<p><strong>Detalles:</strong><br>`;
+                    detalles.forEach(detalle => {
+                        if (detalle.trim()) {
+                            detallesHTML += `<i class="fas fa-caret-right me-1 text-muted"></i>${detalle.trim()}<br>`;
+                        }
+                    });
+                    detallesHTML += `</p>`;
+                }
+
+                detallesHTML += `</div></div>`;
+
+                // Mostrar tabla detallada con todos los productos
+                if (resultado.cantidadProductosProcesados > 0) {
+                    detallesHTML += `
+                        <div class="mt-3">
+                            <strong><i class="fas fa-boxes me-2"></i>Productos Encontrados (${resultado.cantidadProductosProcesados}):</strong>
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm table-bordered producto-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Referencia</th>
+                                            <th>Descripción</th>
+                                            <th>Cantidad</th>
+                                            <th>Lote</th>
+                                            <th>Unidad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+
+                    // Extraer información de productos del mensaje
+                    const message = resultado.message;
+                    for (let i = 1; i <= resultado.cantidadProductosProcesados; i++) {
+                        const prodPattern = new RegExp(`Prod${i}: Ref (\\d+) Cant ([\\d.]+) Lote ([A-Z\\d]+)`, 'i');
+                        const match = message.match(prodPattern);
+
+                        if (match) {
+                            detallesHTML += `
+                                <tr>
+                                    <td>${i}</td>
+                                    <td><strong>${match[1]}</strong></td>
+                                    <td>Producto ${match[1]}</td>
+                                    <td>${match[2]}</td>
+                                    <td>${match[3]}</td>
+                                    <td>UND</td>
+                                </tr>
+                            `;
+                        } else {
+                            detallesHTML += `
+                                <tr>
+                                    <td>${i}</td>
+                                    <td><strong>Ref-${i}</strong></td>
+                                    <td>Producto encontrado en remisión</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>UND</td>
+                                </tr>
+                            `;
+                        }
+                    }
+
+                    detallesHTML += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                previewContent.innerHTML = detallesHTML;
+            } else {
+                previewContent.innerHTML = `
+                    <div class="preview-error">
+                        <strong><i class="fas fa-exclamation-triangle me-2"></i>Error en previsualización:</strong><br>
+                        ${resultado.message}
+                    </div>
+                `;
+            }
+
+        } catch (error) {
+            previewContent.innerHTML = `
+                <div class="preview-error">
+                    <strong><i class="fas fa-exclamation-triangle me-2"></i>Error de conexión:</strong><br>
+                    No se pudo conectar con el servidor: ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    // Limpiar formulario
+    function limpiarFormulario() {
+        document.getElementById('uploadForm').reset();
+        document.getElementById('remisionFileName').innerHTML = '<i class="fas fa-cloud-upload-alt me-1"></i>Arrastra o selecciona el archivo de remisión';
+        document.getElementById('facturaFileName').innerHTML = '<i class="fas fa-cloud-upload-alt me-1"></i>Arrastra o selecciona el archivo de factura';
+        document.getElementById('previewContainer').style.display = 'none';
+    }
+
+    // ==============================================
+    // NUEVAS FUNCIONES PARA DATOS MANUALES
+    // ==============================================
+
+    // MÉTODO MEJORADO PARA SUBIR DOCUMENTOS - CON DATOS MANUALES
+    async function procesarDocumentosConValidacion() {
+        const archivoRemision = document.getElementById('archivoRemision').files[0];
+        const archivoFactura = document.getElementById('archivoFactura').files[0];
+        const usuario = document.getElementById('usuario').value;
+
+        if (!archivoRemision || !archivoFactura) {
+            alert('Debe seleccionar ambos archivos');
+            return;
+        }
+
+        try {
+            // Guardar datos para procesamiento posterior
+            datosProcesamientoPendiente = {
+                archivoRemision: archivoRemision,
+                archivoFactura: archivoFactura,
+                usuario: usuario
+            };
+            usuarioProcesamiento = usuario;
+
+            // PRIMERO: Extraer datos para mostrar en el modal
+            const formDataPreview = new FormData();
+            formDataPreview.append('archivoRemision', archivoRemision);
+            formDataPreview.append('archivoFactura', archivoFactura);
+
+            const responsePreview = await fetch('/documentos/previsualizar', {
+                method: 'POST',
+                body: formDataPreview
+            });
+
+            const resultadoPreview = await responsePreview.json();
+
+            if (resultadoPreview.success) {
+                // MOSTRAR MODAL PARA DATOS MANUALES
+                mostrarModalDatosManuales(resultadoPreview, resultadoPreview, procesarConDatosManuales);
+            } else {
+                alert('Error en previsualización: ' + resultadoPreview.message);
+            }
+
+        } catch (error) {
+            console.error('💥 Error de conexión:', error);
+            alert('Error de conexión: ' + error.message);
+        }
+    }
+
+    // Mostrar modal para ingresar datos manuales
+    function mostrarModalDatosManuales(facturaData, remisionData, callback) {
+        // Remover modal existente si hay
+        const modalExistente = document.getElementById('modalDatosManuales');
+        if (modalExistente) {
+            modalExistente.remove();
+        }
+
+        const modalHTML = `
+            <div class="modal fade" id="modalDatosManuales" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-edit me-2"></i>Completar Información del Documento
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Por favor complete la información faltante del documento:</p>
+
+                            <div class="mb-3">
+                                <label class="form-label">Peso Total (kg) *</label>
+                                <input type="number" class="form-control" id="pesoTotal"
+                                    step="0.01" min="0" placeholder="0.00" required>
+                                <small class="text-muted">Peso total en kilogramos</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Valor Total ($) *</label>
+                                <input type="number" class="form-control" id="valorTotal"
+                                    step="0.01" min="0" placeholder="0.00" required>
+                                <small class="text-muted">Valor total en pesos</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Placa del Vehículo *</label>
+                                <input type="text" class="form-control" id="placaVehiculo"
+                                    placeholder="Ej: ABC123" value="${remisionData.cedulaConductor || ''}" required>
+                                <small class="text-muted">Placa del vehículo de transporte</small>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>Información extraída:</strong><br>
+                                    Factura: ${facturaData.numeroFactura || 'No encontrada'}<br>
+                                    Remisión: ${remisionData.numeroRemision || 'No encontrada'}<br>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="guardarDatosManuales()">
+                                <i class="fas fa-save me-1"></i>Continuar Procesamiento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Agregar modal al DOM
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Configurar callback
+        window.guardarDatosManuales = function() {
+            const pesoTotal = parseFloat(document.getElementById('pesoTotal').value);
+            const valorTotal = parseFloat(document.getElementById('valorTotal').value);
+            const placaVehiculo = document.getElementById('placaVehiculo').value;
+
+            if (!pesoTotal || pesoTotal <= 0) {
+                alert('El peso total debe ser mayor a 0');
+                return;
+            }
+            if (!valorTotal || valorTotal <= 0) {
+                alert('El valor total debe ser mayor a 0');
+                return;
+            }
+            if (!placaVehiculo.trim()) {
+                alert('La placa del vehículo es requerida');
+                return;
+            }
+
+            // Guardar datos manuales
+            datosProcesamientoPendiente.datosManuales = {
+                pesoTotal: pesoTotal,
+                valorTotal: valorTotal,
+                placaVehiculo: placaVehiculo
+            };
+
+            // Cerrar modal y ejecutar callback
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalDatosManuales'));
+            modal.hide();
+            setTimeout(() => {
+                document.getElementById('modalDatosManuales').remove();
+                callback();
+            }, 300);
+        };
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalDatosManuales'));
+        modal.show();
+    }
+
+    // PROCESAR CON DATOS MANUALES DESPUÉS DEL MODAL
+    async function procesarConDatosManuales() {
+        const formData = new FormData();
+        formData.append('archivoRemision', datosProcesamientoPendiente.archivoRemision);
+        formData.append('archivoFactura', datosProcesamientoPendiente.archivoFactura);
+        formData.append('usuario', datosProcesamientoPendiente.usuario);
+
+        // Agregar datos manuales
+        if (datosProcesamientoPendiente.datosManuales) {
+            formData.append('pesoTotal', datosProcesamientoPendiente.datosManuales.pesoTotal);
+            formData.append('valorTotal', datosProcesamientoPendiente.datosManuales.valorTotal);
+            formData.append('placaVehiculo', datosProcesamientoPendiente.datosManuales.placaVehiculo);
+        }
+
+        try {
+            const response = await fetch('/documentos/procesar', {
+                method: 'POST',
+                body: formData
+            });
+
+            const resultado = await response.json();
+
+            if (resultado.success) {
+                // Éxito - redirigir a página de éxito
+                window.location.href = '/documentos/subir?exito=' + encodeURIComponent(resultado.message);
+            } else {
+                // Verificar si faltan entidades
+                if (resultado.message && resultado.message.includes('FALTAN_ENTIDADES:')) {
+                    manejarEntidadesFaltantes(resultado.message);
+                } else {
+                    alert('Error: ' + resultado.message);
+                }
+            }
+        } catch (error) {
+            console.error('💥 Error de conexión:', error);
+            alert('Error de conexión: ' + error.message);
+        }
+    }
+
+    // ==============================================
+    // FUNCIONES EXISTENTES PARA CREACIÓN DE ENTIDADES
+    // ==============================================
+
+    // MANEJAR ENTIDADES FALTANTES
+    function manejarEntidadesFaltantes(mensaje) {
+        const partes = mensaje.split('FALTAN_ENTIDADES:')[1];
+        const entidades = partes.split(';');
+
+        let clienteData = null;
+        let conductorData = null;
+
+        entidades.forEach(entidad => {
+            if (entidad.startsWith('CLIENTE:')) {
+                const datos = entidad.split(':');
+                clienteData = {
+                    nit: datos[1],
+                    nombre: datos[2] || 'Nombre no extraído'
+                };
+            } else if (entidad.startsWith('CONDUCTOR:')) {
+                const datos = entidad.split(':');
+                conductorData = {
+                    cedula: datos[1],
+                    nombre: datos[2] || 'Nombre no extraído',
+                    empresaTransporte: datos[3] || 'Empresa no extraída'
+                };
+            }
+        });
+
+        console.log('📋 Datos para crear:', { clienteData, conductorData });
+
+        // Mostrar modales según lo que falte
+        if (clienteData && conductorData) {
+            mostrarModalClienteFaltante(clienteData, () => {
+                mostrarModalConductorFaltante(conductorData, continuarProcesamiento);
+            });
+        } else if (clienteData) {
+            mostrarModalClienteFaltante(clienteData, continuarProcesamiento);
+        } else if (conductorData) {
+            mostrarModalConductorFaltante(conductorData, continuarProcesamiento);
+        }
+    }
+
+    // MODALES PARA CREACIÓN RÁPIDA
+    function mostrarModalClienteFaltante(clienteData, callback) {
+        // Remover modal existente si hay
+        const modalExistente = document.getElementById('modalClienteFaltante');
+        if (modalExistente) {
+            modalExistente.remove();
+        }
+
+        const modalHTML = `
+            <div class="modal fade" id="modalClienteFaltante" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning text-dark">
+                            <h5 class="modal-title">
+                                <i class="fas fa-user-plus me-2"></i>Crear Cliente
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Se necesita crear el cliente para continuar con el procesamiento:</p>
+                            <div class="mb-3">
+                                <label class="form-label">NIT *</label>
+                                <input type="text" class="form-control" id="clienteNit" value="${clienteData.nit}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nombre *</label>
+                                <input type="text" class="form-control" id="clienteNombre" value="${clienteData.nombre}" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="crearClienteRapido()">
+                                <i class="fas fa-save me-1"></i>Crear y Continuar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Agregar modal al DOM
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Configurar callback
+        window.crearClienteRapido = async function() {
+            const nombre = document.getElementById('clienteNombre').value;
+            if (!nombre.trim()) {
+                alert('El nombre del cliente es requerido');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/clientes/crear-rapido', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nit: clienteData.nit,
+                        nombre: nombre
+                    })
+                });
+
+                if (response.ok) {
+                    // Cerrar modal y ejecutar callback
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalClienteFaltante'));
+                    modal.hide();
+                    setTimeout(() => {
+                        document.getElementById('modalClienteFaltante').remove();
+                        callback();
+                    }, 300);
+                } else {
+                    const error = await response.text();
+                    alert('Error creando cliente: ' + error);
+                }
+            } catch (error) {
+                alert('Error de conexión: ' + error.message);
+            }
+        };
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalClienteFaltante'));
+        modal.show();
+    }
+
+    function mostrarModalConductorFaltante(conductorData, callback) {
+        // Remover modal existente si hay
+        const modalExistente = document.getElementById('modalConductorFaltante');
+        if (modalExistente) {
+            modalExistente.remove();
+        }
+
+        const modalHTML = `
+            <div class="modal fade" id="modalConductorFaltante" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-user-tie me-2"></i>Crear Conductor
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Se necesita crear el conductor para continuar con el procesamiento:</p>
+                            <div class="mb-3">
+                                <label class="form-label">Cédula *</label>
+                                <input type="text" class="form-control" id="conductorCedula" value="${conductorData.cedula}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nombre *</label>
+                                <input type="text" class="form-control" id="conductorNombre" value="${conductorData.nombre}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Empresa Transporte</label>
+                                <input type="text" class="form-control" id="conductorEmpresa" value="${conductorData.empresaTransporte}">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="crearConductorRapido()">
+                                <i class="fas fa-save me-1"></i>Crear y Continuar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Agregar modal al DOM
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Configurar callback
+        window.crearConductorRapido = async function() {
+            const nombre = document.getElementById('conductorNombre').value;
+            if (!nombre.trim()) {
+                alert('El nombre del conductor es requerido');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/conductores/crear-rapido', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cedula: conductorData.cedula,
+                        nombre: nombre,
+                        empresaTransporte: document.getElementById('conductorEmpresa').value
+                    })
+                });
+
+                if (response.ok) {
+                    // Cerrar modal y ejecutar callback
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalConductorFaltante'));
+                    modal.hide();
+                    setTimeout(() => {
+                        document.getElementById('modalConductorFaltante').remove();
+                        callback();
+                    }, 300);
+                } else {
+                    const error = await response.text();
+                    alert('Error creando conductor: ' + error);
+                }
+            } catch (error) {
+                alert('Error de conexión: ' + error.message);
+            }
+        };
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalConductorFaltante'));
+        modal.show();
+    }
+
+    // CONTINUAR PROCESAMIENTO DESPUÉS DE CREAR ENTIDADES
+    async function continuarProcesamiento() {
+        console.log('🔄 Continuando procesamiento...');
+        if (datosProcesamientoPendiente) {
+            // Re-procesar los documentos después de crear las entidades faltantes
+            await procesarConDatosManuales();
+        }
+    }
+
+    // ==============================================
+    // CONFIGURACIÓN DRAG & DROP
+    // ==============================================
+    function setupDragAndDrop(areaId, inputId) {
+        const area = document.getElementById(areaId);
+        const input = document.getElementById(inputId);
+
+        area.addEventListener('click', () => input.click());
 
         area.addEventListener('dragover', (e) => {
             e.preventDefault();
-            area.style.borderColor = '#0d6efd';
-            area.style.backgroundColor = '#e3f2fd';
+            area.classList.add('dragover');
         });
 
         area.addEventListener('dragleave', () => {
-            area.style.borderColor = '#ccc';
-            area.style.backgroundColor = '#f8f9fa';
+            area.classList.remove('dragover');
         });
 
         area.addEventListener('drop', (e) => {
             e.preventDefault();
-            area.style.borderColor = '#ccc';
-            area.style.backgroundColor = '#f8f9fa';
+            area.classList.remove('dragover');
 
             if (e.dataTransfer.files.length) {
                 input.files = e.dataTransfer.files;
-                text.textContent = e.dataTransfer.files[0].name;
+                updateFileName(input, areaId.replace('Area', 'FileName'));
+                previsualizarDatos();
             }
         });
-    });
+    }
+
+    // Configurar drag and drop para ambas áreas
+    setupDragAndDrop('remisionArea', 'archivoRemision');
+    setupDragAndDrop('facturaArea', 'archivoFactura');
 </script>
 </body>
 </html>

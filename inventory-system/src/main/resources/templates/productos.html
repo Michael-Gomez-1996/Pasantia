@@ -3,24 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Productos - GMT Inventory</title>
+    <title>Productos - GMT Inventory</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .form-card { background: #f8f9fa; border-radius: 10px; padding: 20px; }
+        .form-card { background: #f8f9fa; border-radius: 10px; padding: 20px; border-left: 4px solid #0d6efd; }
         .stock-bajo { background-color: #ffeaa7 !important; }
         .stock-critico { background-color: #fab1a0 !important; }
+        .table-hover tbody tr:hover { background-color: rgba(13, 110, 253, 0.1); }
+        .badge-stock { font-size: 0.8em; }
+        .estiba-info { background-color: #e8f5e8; border-left: 3px solid #28a745; }
     </style>
 </head>
 <body>
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="/">🏭 GMT Inventory</a>
-        <div class="navbar-nav">
-            <a class="nav-link" href="/">Dashboard</a>
-            <a class="nav-link active" href="/productos">Productos</a>
-            <a class="nav-link" href="/movimientos">Movimientos</a>
-            <a class="nav-link" href="/reportes">Reportes</a>
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-warehouse me-2"></i>GMT Inventory
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="/">
+                    <i class="fas fa-home me-1"></i>Dashboard
+                </a>
+                <a class="nav-link active" href="/productos">
+                    <i class="fas fa-boxes me-1"></i>Productos
+                </a>
+                <a class="nav-link" href="/movimientos">
+                    <i class="fas fa-exchange-alt me-1"></i>Movimientos
+                </a>
+                <a class="nav-link" href="/documentos/subir">
+                    <i class="fas fa-file-upload me-1"></i>Subir Documentos
+                </a>
+                <a class="nav-link" href="/reportes">
+                    <i class="fas fa-chart-bar me-1"></i>Reportes
+                </a>
+            </div>
+            <div class="navbar-nav">
+                    <span class="navbar-text">
+                        <i class="fas fa-user me-1"></i>Sistema GMT
+                    </span>
+            </div>
         </div>
     </div>
 </nav>
@@ -28,36 +55,52 @@
 <div class="container mt-4">
     <!-- Alertas -->
     <div th:if="${param.exito}" class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>
         <span th:text="${param.exito}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
     <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>
         <span th:text="${param.error}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-boxes me-2"></i>Gestión de Productos</h1>
+        <div>
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Formulario de nuevo producto -->
-        <div class="col-md-4">
-            <div class="form-card">
-                <h5>➕ Nuevo Producto</h5>
+        <div class="col-lg-4">
+            <div class="form-card mb-4">
+                <h5 class="mb-3"><i class="fas fa-plus-circle me-2"></i>Nuevo Producto</h5>
                 <form th:action="@{/productos/crear}" method="post" th:object="${nuevoProducto}">
                     <div class="mb-3">
                         <label class="form-label">Referencia *</label>
-                        <input type="text" class="form-control" th:field="*{referencia}" required>
+                        <input type="text" class="form-control" th:field="*{referencia}" required
+                               placeholder="Ej: 1239">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Nombre *</label>
-                        <input type="text" class="form-control" th:field="*{nombre}" required>
+                        <input type="text" class="form-control" th:field="*{nombre}" required
+                               placeholder="Ej: AZ BCO ESP #180 UI 25 KG POULAM">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Lote</label>
-                        <input type="text" class="form-control" th:field="*{lote}">
+                        <input type="text" class="form-control" th:field="*{lote}"
+                               placeholder="Ej: M25081239">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Descripción</label>
-                        <textarea class="form-control" th:field="*{descripcion}" rows="2"></textarea>
+                        <textarea class="form-control" th:field="*{descripcion}" rows="2"
+                                  placeholder="Descripción del producto..."></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Categoría *</label>
@@ -66,17 +109,46 @@
                             <option th:each="cat : ${categorias}" th:value="${cat}" th:text="${cat}"></option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Stock Inicial *</label>
-                        <input type="number" class="form-control" th:field="*{cantidadStock}" required min="0">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Stock Inicial *</label>
+                                <input type="number" class="form-control" th:field="*{cantidadStock}"
+                                       required min="0" value="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Stock Mínimo *</label>
+                                <input type="number" class="form-control" th:field="*{stockMinimo}"
+                                       required min="1" value="50">
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Peso por Paca (kg) *</label>
-                        <input type="number" class="form-control" th:field="*{pesoPorPaca}" required min="0" step="0.1">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Peso por Paca (kg) *</label>
+                                <input type="number" class="form-control" th:field="*{pesoPorPaca}"
+                                       required min="0" step="0.1" placeholder="25.0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Unidades por Paca *</label>
+                                <input type="number" class="form-control" th:field="*{unidadesPorPaca}"
+                                       required min="1" value="1">
+                            </div>
+                        </div>
                     </div>
+                    <!-- ✅ NUEVO CAMPO: PACAS POR ESTIBA -->
                     <div class="mb-3">
-                        <label class="form-label">Unidades por Paca *</label>
-                        <input type="number" class="form-control" th:field="*{unidadesPorPaca}" required min="1" value="1">
+                        <label class="form-label">Pacas por Estiba *</label>
+                        <input type="number" class="form-control" th:field="*{pacasPorEstiba}"
+                               required min="1" value="100" placeholder="100">
+                        <div class="form-text">
+                            Cantidad de pacas que conforman una estiba completa
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Proveedor *</label>
@@ -85,27 +157,51 @@
                             <option th:each="prov : ${proveedores}" th:value="${prov}" th:text="${prov}"></option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Crear Producto</button>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-save me-1"></i>Crear Producto
+                    </button>
                 </form>
+            </div>
+
+            <!-- Información de ayuda -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Categorías permitidas:</strong><br>
+                        • AZUCAR_BLANCA<br>
+                        • AZUCAR_NATURAL<br><br>
+                        <strong>Proveedores permitidos:</strong><br>
+                        • ING_MAYAGUEZ<br>
+                        • ING_SAN_CARLOS<br><br>
+                        <strong>Gestión de Estibas:</strong><br>
+                        • 1 Estiba = Pacas por Estiba<br>
+                        • Cálculo automático de estibas completas<br>
+                        • Control de pacas sueltas
+                    </small>
+                </div>
             </div>
         </div>
 
         <!-- Lista de productos -->
-        <div class="col-md-8">
+        <div class="col-lg-8">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5>📦 Inventario de Productos</h5>
-                    <span class="badge bg-primary" th:text="'Total: ' + ${productos.size()}"></span>
+                    <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Inventario de Productos</h5>
+                    <span class="badge bg-primary fs-6" th:text="'Total: ' + ${productos.size()}"></span>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
                             <tr>
                                 <th>Ref.</th>
                                 <th>Nombre</th>
                                 <th>Categoría</th>
                                 <th>Stock</th>
+                                <th>Estibas</th>
                                 <th>Peso Paca</th>
                                 <th>Proveedor</th>
                                 <th>Estado</th>
@@ -115,25 +211,123 @@
                             <tr th:each="producto : ${productos}"
                                 th:classappend="${producto.cantidadStock <= 20} ? 'stock-critico' :
                                                         (${producto.cantidadStock <= producto.stockMinimo} ? 'stock-bajo' : '')">
-                                <td th:text="${producto.referencia}"></td>
+                                <td>
+                                    <strong th:text="${producto.referencia}"></strong>
+                                </td>
                                 <td th:text="${producto.nombre}"></td>
-                                <td th:text="${producto.categoria}"></td>
+                                <td>
+                                            <span class="badge"
+                                                  th:classappend="${producto.categoria == 'AZUCAR_BLANCA'} ? 'bg-light text-dark' : 'bg-dark'"
+                                                  th:text="${producto.categoria}">
+                                            </span>
+                                </td>
                                 <td>
                                     <strong th:text="${producto.cantidadStock}"></strong>
                                     <small class="text-muted" th:text="'/ ' + ${producto.stockMinimo}"></small>
+                                    <div th:if="${producto.cantidadAveriada > 0}" class="text-danger small">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Aver: <span th:text="${producto.cantidadAveriada}"></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <!-- ✅ NUEVA INFORMACIÓN DE ESTIBAS -->
+                                    <div class="estiba-info p-1 rounded small">
+                                        <div><strong>Estibas:</strong>
+                                            <span th:text="${producto.totalEstibas}">0</span>
+                                        </div>
+                                        <div><strong>Sueltas:</strong>
+                                            <span th:text="${producto.pacasSueltas}">0</span>
+                                        </div>
+                                        <div><strong>P/Estiba:</strong>
+                                            <span th:text="${producto.pacasPorEstiba}">100</span>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td th:text="${producto.pesoPorPaca} + ' kg'"></td>
-                                <td th:text="${producto.proveedor}"></td>
+                                <td>
+                                    <small class="text-muted" th:text="${producto.proveedor}"></small>
+                                </td>
                                 <td>
                                             <span th:if="${producto.cantidadStock <= 20}"
-                                                  class="badge bg-danger">Crítico</span>
+                                                  class="badge bg-danger badge-stock">Crítico</span>
                                     <span th:elseif="${producto.cantidadStock <= producto.stockMinimo}"
-                                          class="badge bg-warning">Bajo</span>
-                                    <span th:else class="badge bg-success">Normal</span>
+                                          class="badge bg-warning badge-stock">Bajo</span>
+                                    <span th:else class="badge bg-success badge-stock">Normal</span>
                                 </td>
                             </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div th:if="${productos.empty}" class="text-center text-muted py-4">
+                        <i class="fas fa-box-open fa-3x mb-3"></i>
+                        <p>No hay productos registrados</p>
+                        <a href="#" class="btn btn-primary">Crear primer producto</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen de estados -->
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center py-2">
+                            <h6>Normal</h6>
+                            <h4 th:text="${#lists.size(#lists.select(productos, p.!{p.cantidadStock > p.stockMinimo}))}">0</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body text-center py-2">
+                            <h6>Bajo Stock</h6>
+                            <h4 th:text="${#lists.size(#lists.select(productos, p.!{p.cantidadStock <= p.stockMinimo and p.cantidadStock > 20}))}">0</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center py-2">
+                            <h6>Crítico</h6>
+                            <h4 th:text="${#lists.size(#lists.select(productos, p.!{p.cantidadStock <= 20}))}">0</h4>
+                        </div>
+                    </div>
+                </div>
+                <!-- ✅ NUEVO RESUMEN: TOTAL ESTIBAS -->
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center py-2">
+                            <h6>Total Estibas</h6>
+                            <h4 th:text="${#lists.sum(#lists.select(productos, p.!{p.totalEstibas}))}">0</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ✅ NUEVA SECCIÓN: RESUMEN DE ESTIBAS -->
+            <div class="card mt-3">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-pallet me-2"></i>Resumen de Estibas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="border rounded p-2">
+                                <h5 class="text-primary" th:text="${#lists.sum(#lists.select(productos, p.!{p.totalEstibas}))}">0</h5>
+                                <small class="text-muted">Estibas Completas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-2">
+                                <h5 class="text-warning" th:text="${#lists.sum(#lists.select(productos, p.!{p.pacasSueltas}))}">0</h5>
+                                <small class="text-muted">Pacas Sueltas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-2">
+                                <h5 class="text-success" th:text="${#lists.sum(#lists.select(productos, p.!{#numbers.formatDecimal(p.pesoTotalEstibas, 1, 2)})) + ' kg'}">0 kg</h5>
+                                <small class="text-muted">Peso Total Estibas</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
