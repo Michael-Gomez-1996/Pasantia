@@ -4,6 +4,8 @@ import com.gmt.inventorysystem.dto.ReporteMovimientoDTO;
 import com.gmt.inventorysystem.dto.ReporteInventarioDTO;
 import com.gmt.inventorysystem.service.ExcelExportService;
 import com.gmt.inventorysystem.service.ReporteService;
+import com.gmt.inventorysystem.model.DocumentoCompra;
+import com.gmt.inventorysystem.service.DocumentoCompraService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -13,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;  // ✅ IMPORT NECESARIO AQUÍ TAMBIÉN
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -26,7 +28,9 @@ public class ReporteController {
     @Autowired
     private ExcelExportService excelExportService;
 
-    // Endpoints existentes...
+    @Autowired
+    private DocumentoCompraService documentoCompraService;
+
     @GetMapping("/movimientos-excel")
     public ResponseEntity<List<ReporteMovimientoDTO>> generarReporteMovimientosExcel(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
@@ -50,7 +54,6 @@ public class ReporteController {
         }
     }
 
-    // NUEVOS ENDPOINTS PARA DESCARGAR EXCEL
     @GetMapping("/descargar-movimientos")
     public ResponseEntity<byte[]> descargarReporteMovimientosExcel(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
@@ -58,7 +61,9 @@ public class ReporteController {
 
         try {
             List<ReporteMovimientoDTO> reporte = reporteService.generarReporteMovimientosExcel(fechaInicio, fechaFin);
-            byte[] excelBytes = excelExportService.exportarReporteMovimientos(reporte);
+            List<DocumentoCompra> documentosConIngresos = documentoCompraService.obtenerTodosDocumentosCompra();
+
+            byte[] excelBytes = excelExportService.exportarReporteMovimientosCompleto(reporte, documentosConIngresos);
 
             String filename = "reporte_movimientos_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
 
