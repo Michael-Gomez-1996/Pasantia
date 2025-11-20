@@ -17,8 +17,7 @@ import java.util.List;
 @Service
 public class ExcelExportService {
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-    private static final DateTimeFormatter DATE_ONLY_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public byte[] exportarReporteMovimientos(List<ReporteMovimientoDTO> movimientos) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -194,7 +193,7 @@ public class ExcelExportService {
 
         String[] headers = {
                 "FECHA INGRESO", "REMISIÓN", "MOVIMIENTO", "ORIGEN", "DESTINO",
-                "CÓDIGO", "DESCRIPCIÓN", "CANTIDAD", "PESO EN KILOS"
+                "PLACA VEHÍCULO", "CÓDIGO", "DESCRIPCIÓN", "CANTIDAD", "PESO EN KILOS"
         };
 
         Row headerRow = sheet.createRow(0);
@@ -211,7 +210,6 @@ public class ExcelExportService {
                     if ("ENTRADA".equals(movimiento.getTipoMovimiento())) {
                         Row row = sheet.createRow(rowNum++);
 
-                        // FECHA INGRESO (NUEVA COLUMNA)
                         Cell fechaCell = row.createCell(0);
                         if (movimiento.getFechaMovimiento() != null) {
                             fechaCell.setCellValue(movimiento.getFechaMovimiento().format(DATE_FORMATTER));
@@ -228,16 +226,20 @@ public class ExcelExportService {
                         String destino = "BODEGA GMT CALLE 13";
                         row.createCell(4).setCellValue(destino);
 
+                        String placaVehiculo = documento.getPlacaVehiculo() != null ?
+                                documento.getPlacaVehiculo() : "SIN PLACA";
+                        row.createCell(5).setCellValue(placaVehiculo);
+
                         Producto producto = movimiento.getProducto();
                         if (producto != null) {
-                            row.createCell(5).setCellValue(producto.getReferencia());
-                            row.createCell(6).setCellValue(producto.getNombre() != null ? producto.getNombre() : "");
+                            row.createCell(6).setCellValue(producto.getReferencia());
+                            row.createCell(7).setCellValue(producto.getNombre() != null ? producto.getNombre() : "");
 
-                            Cell cantidadCell = row.createCell(7);
+                            Cell cantidadCell = row.createCell(8);
                             cantidadCell.setCellValue(movimiento.getCantidad());
                             cantidadCell.setCellStyle(numberStyle);
 
-                            Cell pesoCell = row.createCell(8);
+                            Cell pesoCell = row.createCell(9);
                             double pesoKilos = 0.0;
                             if (producto.getPesoPorPaca() != null && movimiento.getCantidad() != null) {
                                 pesoKilos = producto.getPesoPorPaca() * movimiento.getCantidad();
@@ -347,7 +349,7 @@ public class ExcelExportService {
 
                 Cell fechaCell = row.createCell(18);
                 if (producto.getFechaCreacion() != null) {
-                    fechaCell.setCellValue(producto.getFechaCreacion().format(DATE_ONLY_FORMATTER));
+                    fechaCell.setCellValue(producto.getFechaCreacion().format(DATE_FORMATTER));
                 }
                 fechaCell.setCellStyle(dateStyle);
 
@@ -409,7 +411,7 @@ public class ExcelExportService {
     private CellStyle createDateStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         CreationHelper createHelper = workbook.getCreationHelper();
-        style.setDataFormat(createHelper.createDataFormat().getFormat("dd/mm/yyyy hh:mm"));
+        style.setDataFormat(createHelper.createDataFormat().getFormat("dd/mm/yyyy"));
         style.setBorderBottom(BorderStyle.THIN);
         style.setBorderTop(BorderStyle.THIN);
         style.setBorderLeft(BorderStyle.THIN);
